@@ -6,10 +6,9 @@ edition = "2021"
 [dependencies]
 actix-web = "~4"
 serde = { version = "~1", features = ["derive"] }
-diesel = { version = "~2", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel = { version = "~2", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "chrono"] }
 dotenvy = "0.15"
-# tokio = { version = "1", features = ["full"] }
-# surrealdb = { version = "2.0.1", features = ["kv-mem"] }
+chrono = { version = "~0.4", features = ["serde"] }
 
 
 [build]

@@ -3,6 +3,7 @@
         "tamasfe.even-better-toml",
         "rust-lang.rust-analyzer",
         "mtxr.sqltools-driver-sqlite",
-        "mtxr.sqltools"
+        "mtxr.sqltools",
+        "task.vscode-task"
     ]
 }
