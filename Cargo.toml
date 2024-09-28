@@ -1,0 +1,19 @@
+[package]
+name = "groups"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "~4"
+serde = { version = "~1", features = ["derive"] }
+diesel = { version = "~2", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+dotenvy = "0.15"
+# tokio = { version = "1", features = ["full"] }
+# surrealdb = { version = "2.0.1", features = ["kv-mem"] }
+
+
+[build]
+rustflags = ["- C", "target-cpu=native"]
+
+[profile.release]
+opt-level = 3 # 3 => Optimize for speed | s => Optimize for size 
