@@ -1,8 +1,8 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use diesel::{prelude::*};
+use diesel::prelude::*;
 use dotenvy::dotenv;
+use std::env;
 use std::sync::Mutex;
-use std::{env};
 
 struct AppStateWithCounter {
     counter: Mutex<i32>,
