@@ -1,7 +1,10 @@
 use std::env;
 
 use crate::models::Group;
-use diesel::{Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
+use diesel::{
+    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
+    SqliteConnection,
+};
 use dotenvy::dotenv;
 
 pub struct DB {
@@ -58,7 +61,11 @@ impl DB {
         diesel::delete(groups.find(group_id)).execute(&mut self.conn)
     }
 
-    pub fn update_group(&mut self, group_id: i32, group_name: &str) -> Result<usize, diesel::result::Error> {
+    pub fn update_group(
+        &mut self,
+        group_id: i32,
+        group_name: &str,
+    ) -> Result<usize, diesel::result::Error> {
         use crate::schema::groups::dsl::*;
         diesel::update(groups.find(group_id))
             .set(name.eq(group_name))
