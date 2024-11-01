@@ -11,6 +11,12 @@ pub struct DB {
     conn: SqliteConnection,
 }
 
+impl Default for DB {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DB {
     pub fn new() -> DB {
         let mut db = establish_connection();
