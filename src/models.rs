@@ -9,3 +9,14 @@ pub struct Group {
     pub creation_date: chrono::NaiveDateTime,
     pub deletion_date: Option<chrono::NaiveDateTime>,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::users)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct User {
+    pub id: i32,
+    pub username: String,
+    pub password: String,
+    pub creation_date: chrono::NaiveDateTime,
+    pub deletion_date: Option<chrono::NaiveDateTime>,
+}
