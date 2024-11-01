@@ -1,4 +1,2 @@
-pub mod db;
-pub mod models;
+pub mod database;
 pub mod password;
-pub mod schema;

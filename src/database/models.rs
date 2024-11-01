@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 #[derive(Queryable, Selectable, Insertable)]
-#[diesel(table_name = crate::schema::groups)]
+#[diesel(table_name = crate::database::schema::groups)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Group {
     pub id: i32,
@@ -11,7 +11,7 @@ pub struct Group {
 }
 
 #[derive(Queryable, Selectable, Insertable)]
-#[diesel(table_name = crate::schema::users)]
+#[diesel(table_name = crate::database::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
     pub id: i32,

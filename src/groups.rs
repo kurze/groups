@@ -1,33 +1,8 @@
-use std::env;
-
+use crate::db::DB;
 use crate::models::Group;
-use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
-    SqliteConnection,
-};
-use dotenvy::dotenv;
-
-pub struct DB {
-    conn: SqliteConnection,
-}
-
-impl Default for DB {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 
 impl DB {
-    pub fn new() -> DB {
-        let mut db = establish_connection();
-        if let Err(e) = diesel::sql_query("SELECT 1").execute(&mut db) {
-            eprintln!("Error checking database connection: {}", e);
-        } else {
-            println!("Database connection established successfully.");
-        }
-        DB { conn: db }
-    }
-
     pub fn list_groups(&mut self) -> Result<Vec<Group>, diesel::result::Error> {
         use crate::schema::groups::dsl::*;
         groups
@@ -77,11 +52,4 @@ impl DB {
             .set(name.eq(group_name))
             .execute(&mut self.conn)
     }
-}
-
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
