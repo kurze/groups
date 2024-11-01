@@ -42,4 +42,10 @@ tasks:
   db.migration.revert: 
     desc: Revert the last migration
     cmd: diesel migration revert
+  db.init:
+    desc: Create the database
+    cmd: mkdir db && diesel database setup
 
+  install-dev-tools:
+    desc: Install development tools
+    cmd: cargo install diesel_cli --no-default-features --features sqlite
