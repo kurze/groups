@@ -10,6 +10,7 @@ diesel = { version = "~2", features = ["sqlite", "returning_clauses_for_sqlite_3
 dotenvy = "0.15"
 chrono = { version = "~0.4", features = ["serde"] }
 argon2 = "0.5.3"
+diesel_migrations = "2.2.0"
 
 
 [build]
