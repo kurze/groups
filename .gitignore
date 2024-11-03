@@ -1,3 +1,4 @@
 /target
-db/sqlite.db
+db/*
 groups-db.session.sql
+groups-db-test.session.sql
