@@ -3,7 +3,7 @@ use dotenvy::dotenv;
 use std::env;
 
 pub struct DB {
-    conn: SqliteConnection,
+    pub conn: SqliteConnection,
 }
 
 impl Default for DB {

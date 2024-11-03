@@ -1,5 +1,6 @@
 // use crate::test_db::create_test_db;
 mod db_setup;
+use diesel::RunQueryDsl;
 use groups::database::db::DB;
 
 #[test]
@@ -7,8 +8,10 @@ fn test_crud_groups() {
     let conn = db_setup::create_test_db();
     let mut db = DB::new_with_connection(conn);
 
-    // Clear existing groups
-    db.clear_groups().expect("Failed to clear groups");
+    // Clear the groups table
+    diesel::delete(groups::database::schema::groups::dsl::groups)
+        .execute(&mut db.conn)
+        .expect("Failed to clear groups table");
 
     // Create a group
     let group_name = "Test Group";

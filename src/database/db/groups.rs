@@ -88,13 +88,4 @@ impl db::DB {
             .set(name.eq(group_name))
             .execute(&mut self.conn)
     }
-
-    /// Clears all groups from the database.
-    ///
-    /// # Returns
-    /// A `Result` containing the number of rows affected on success, or a `diesel::result::Error` on failure.
-    pub fn clear_groups(&mut self) -> Result<usize, diesel::result::Error> {
-        use crate::database::schema::groups::dsl::*;
-        diesel::delete(groups).execute(&mut self.conn)
-    }
 }
