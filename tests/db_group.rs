@@ -24,14 +24,16 @@ fn test_crud_groups() {
     assert_eq!(groups[0], group);
 
     let group_name = "Test Group 2";
-    let group = db.create_group(group_name).expect("Failed to create group");
-    assert_eq!(group.name, group_name);
-    assert!(group.id > 0);
-    assert!(group.deletion_date.is_none());
+    let group2 = db.create_group(group_name).expect("Failed to create group");
+    assert_eq!(group2.name, group_name);
+    assert!(group2.id > 0);
+    assert!(group2.deletion_date.is_none());
 
     let groups = db.list_groups().expect("Failed to list groups");
     assert_eq!(groups.len(), 2);
-    // assert_eq!(groups[0], group);
+    assert!(groups[0] != groups[1]);
+    assert!(groups.contains(&group));
+    assert!(groups.contains(&group2));
 
     // Get group
     let group_from_db = db
