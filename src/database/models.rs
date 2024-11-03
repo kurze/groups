@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-#[derive(Queryable, Selectable, Insertable, PartialEq, Debug)]
+#[derive(Queryable, Selectable, PartialEq, Debug)]
 #[diesel(table_name = crate::database::schema::groups)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Group {

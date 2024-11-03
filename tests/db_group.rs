@@ -22,7 +22,7 @@ fn test_crud_groups() {
     assert!(group.deletion_date.is_none());
 
     // List groups
-    let groups = db.list_groups().expect("Failed to list groups");
+    let groups = db.list_groups(false).expect("Failed to list groups");
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0], group);
 
@@ -32,7 +32,7 @@ fn test_crud_groups() {
     assert!(group2.id > 0);
     assert!(group2.deletion_date.is_none());
 
-    let groups = db.list_groups().expect("Failed to list groups");
+    let groups = db.list_groups(false).expect("Failed to list groups");
     assert_eq!(groups.len(), 2);
     assert!(groups[0] != groups[1]);
     assert!(groups.contains(&group));

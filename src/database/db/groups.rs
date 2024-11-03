@@ -7,11 +7,19 @@ impl db::DB {
     ///
     /// # Returns
     /// A `Result` containing a vector of `Group` on success, or a `diesel::result::Error` on failure.
-    pub fn list_groups(&mut self) -> Result<Vec<Group>, diesel::result::Error> {
+    pub fn list_groups(
+        &mut self,
+        include_deleted: bool,
+    ) -> Result<Vec<Group>, diesel::result::Error> {
         use crate::database::schema::groups::dsl::*;
-        groups
-            .select(Group::as_select())
-            .load::<Group>(&mut self.conn)
+        let request = groups.select(Group::as_select());
+        if include_deleted {
+            request.load::<Group>(&mut self.conn)
+        } else {
+            request
+                .filter(deletion_date.is_null())
+                .load::<Group>(&mut self.conn)
+        }
     }
 
     /// Counts the total number of groups in the database.
@@ -58,7 +66,7 @@ impl db::DB {
             .get_result(&mut self.conn)
     }
 
-    /// Deletes a group by its ID.
+    /// Mark as deleted a group by its ID.
     ///
     /// # Parameters
     /// - `group_id`: The ID of the group to delete.
@@ -67,7 +75,22 @@ impl db::DB {
     /// A `Result` containing the number of rows affected on success, or a `diesel::result::Error` on failure.
     pub fn delete_group(&mut self, group_id: i32) -> Result<usize, diesel::result::Error> {
         use crate::database::schema::groups::dsl::*;
-        diesel::delete(groups.find(group_id)).execute(&mut self.conn)
+        diesel::update(groups.find(group_id))
+            .set(deletion_date.eq(Some(chrono::Utc::now().naive_utc())))
+            .execute(&mut self.conn)
+    }
+
+    /// Definitely delete a group by its ID.
+    ///
+    /// # Parameters
+    /// - `group_id`: The ID of the group to delete.
+    ///
+    /// # Returns
+    /// A `Result` containing the number of rows affected on success, or a `diesel::result::Error` on failure.
+    pub fn destroy_group(&mut self, group_id: i32) -> Result<usize, diesel::result::Error> {
+        use crate::database::schema::groups::dsl::*;
+        diesel::delete(groups.find(group_id).filter(deletion_date.is_not_null()))
+            .execute(&mut self.conn)
     }
 
     /// Updates the name of a group by its ID.
