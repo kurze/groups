@@ -4,7 +4,13 @@
             "previewLimit": 100,
             "driver": "SQLite",
             "name": "groups-db",
-            "database": "./db/sqlite.db"
+            "database": "./db/groups.sqlite"
+        },
+        {
+            "previewLimit": 100,
+            "driver": "SQLite",
+            "name": "groups-db-test",
+            "database": "./db/test.sqlite"
         }
     ],
     "sqltools.useNodeRuntime": true

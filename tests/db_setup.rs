@@ -8,13 +8,10 @@ use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness}; // Add SqliteMigrations
 
 pub fn create_test_db() -> SqliteConnection {
-    let db_url = "/tmp/test_db.sqlite";
+    let db_url = "db/test.sqlite";
     let _ = fs::remove_file(db_url); // Remove any existing test database file
     let mut connection =
         SqliteConnection::establish(db_url).expect("Failed to create test database");
-
-    // Apply all pending migrations
-    // diesel_migrations::run_pending_migrations(&connection).expect("Failed to run migrations");
     run_migrations(&mut connection).expect("Failed to run migrations");
 
     connection
