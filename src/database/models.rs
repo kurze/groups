@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-#[derive(Queryable, Selectable, Insertable)]
+#[derive(Queryable, Selectable, Insertable, PartialEq, Debug)]
 #[diesel(table_name = crate::database::schema::groups)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Group {
@@ -10,7 +10,16 @@ pub struct Group {
     pub deletion_date: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Queryable, Selectable, Insertable)]
+#[derive(Insertable)]
+#[diesel(table_name = crate::database::schema::groups)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct NewGroup {
+    pub name: String,
+    pub creation_date: chrono::NaiveDateTime,
+    pub deletion_date: Option<chrono::NaiveDateTime>,
+}
+
+#[derive(Queryable, Selectable, Insertable, PartialEq, Debug)]
 #[diesel(table_name = crate::database::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {

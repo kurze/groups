@@ -12,33 +12,46 @@ fn test_crud_groups() {
 
     // Create a group
     let group_name = "Test Group";
-    db.create_group(group_name).expect("Failed to create group");
+    let group = db.create_group(group_name).expect("Failed to create group");
+    assert_eq!(group.name, group_name);
+    println!("Group ID: {}", group.id);
+    assert!(group.id > 0);
+    assert!(group.deletion_date.is_none());
 
     // List groups
     let groups = db.list_groups().expect("Failed to list groups");
     assert_eq!(groups.len(), 1);
-    assert_eq!(groups[0].name, group_name);
+    assert_eq!(groups[0], group);
+
+    let group_name = "Test Group 2";
+    let group = db.create_group(group_name).expect("Failed to create group");
+    assert_eq!(group.name, group_name);
+    assert!(group.id > 0);
+    assert!(group.deletion_date.is_none());
+
+    let groups = db.list_groups().expect("Failed to list groups");
+    assert_eq!(groups.len(), 2);
+    // assert_eq!(groups[0], group);
 
     // Get group
-    let group_id = groups[0].id;
-    let group = db
-        .get_group(group_id)
+    let group_from_db = db
+        .get_group(group.id)
         .expect("Failed to get group")
         .expect("Group not found");
-    assert_eq!(group.name, group_name);
+    assert_eq!(group, group_from_db);
 
     // Update group
     let new_group_name = "Updated Test Group";
-    db.update_group(group_id, new_group_name)
+    db.update_group(group.id, new_group_name)
         .expect("Failed to update group");
     let updated_group = db
-        .get_group(group_id)
+        .get_group(group.id)
         .expect("Failed to get group")
         .expect("Group not found");
     assert_eq!(updated_group.name, new_group_name);
 
     // Delete group
-    db.delete_group(group_id).expect("Failed to delete group");
-    let deleted_group = db.get_group(group_id).expect("Failed to get group");
+    db.delete_group(group.id).expect("Failed to delete group");
+    let deleted_group = db.get_group(group.id).expect("Failed to get group");
     assert!(deleted_group.is_none());
 }
