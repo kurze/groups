@@ -18,3 +18,6 @@ rustflags = ["- C", "target-cpu=native"]
 
 [profile.release]
 opt-level = 3 # 3 => Optimize for speed | s => Optimize for size 
+lto = true # Link Time Optimization false, true (fat) or thin
+# codegen-units = 1 # Number of codegen units to use for this target bigger, faster compilation but less optimization
+strip = "debuginfo" # Strip debug information from the output binary
