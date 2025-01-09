@@ -36,3 +36,4 @@ pub fn establish_connection() -> SqliteConnection {
 }
 
 mod groups;
+mod users;
