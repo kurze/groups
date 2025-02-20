@@ -1,8 +1,0 @@
-CREATE TABLE users(
-	id INTEGER NOT NULL PRIMARY KEY,
-	username TEXT NOT NULL,
-	emmail TEXT NOT NULL,
-	password TEXT NOT NULL,
-	creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	deletion_date TIMESTAMP
-);
