@@ -23,7 +23,13 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
+      - name: install
+        run: cargo install cargo-audit
       - name: Build
         run: cargo build
       - name: Run tests
         run: cargo test --verbose
+      - name: Audit
+        run: cargo audit
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
