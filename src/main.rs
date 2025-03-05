@@ -1,4 +1,5 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, web};
+use db::user::UserService;
 use std::sync::Mutex;
 mod db;
 
@@ -15,10 +16,13 @@ async fn hello(data: web::Data<AppStateWithCounter>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    db::test_native().unwrap();
+    let db = db::test_native().unwrap();
     let counter = web::Data::new(AppStateWithCounter {
         counter: Mutex::new(0),
     });
+
+    let user_service = UserService::new(db.into());
+    println!("Number of users: {}", user_service.count().unwrap());
 
     // std::env::set_var("RUST_LOG", "debug");
     // std::env::set_var("RUST_BACKTRACE", "1");

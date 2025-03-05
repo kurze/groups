@@ -6,8 +6,8 @@ mod user;
 pub type User = user::V1;
 pub(crate) type UserKey = user::V1Key;
 
-pub type Group = group::V1;
-pub(crate) type GroupKey = group::V1Key;
+// pub type Group = group::V1;
+// pub(crate) type GroupKey = group::V1Key;
 
 pub static MODELS: Lazy<native_db::Models> = Lazy::new(|| {
     let mut models = native_db::Models::new();

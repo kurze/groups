@@ -1,9 +1,9 @@
-use native_db::{self, Builder, db_type};
+use native_db::{self, Builder, Database, db_type};
 
 mod models;
 pub mod user;
 
-pub fn test_native() -> Result<(), db_type::Error> {
+pub fn test_native() -> Result<Database<'static>, db_type::Error> {
     // ... database creation see previous example
     let db = Builder::new().create_in_memory(&models::MODELS)?;
 
@@ -38,5 +38,5 @@ pub fn test_native() -> Result<(), db_type::Error> {
         }
     }
 
-    Ok(())
+    Ok(db)
 }
