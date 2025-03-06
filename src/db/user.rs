@@ -1,6 +1,6 @@
 use crate::db::models::{User, UserKey};
 use native_db::{db_type, transaction::query::PrimaryScanIterator};
-// use core::error;
+
 use std::sync::Arc;
 use thiserror::Error;
 

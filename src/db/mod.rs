@@ -1,5 +1,6 @@
 use native_db::{self, Builder, Database, db_type};
 
+pub mod group;
 mod models;
 pub mod user;
 
