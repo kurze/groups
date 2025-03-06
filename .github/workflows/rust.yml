@@ -65,7 +65,9 @@ jobs:
       - name: Generate coverage report
         run: cargo tarpaulin --out Xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   security_audit:
     name: Security audit
