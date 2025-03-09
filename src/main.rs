@@ -4,8 +4,8 @@ use std::sync::Arc;
 mod api;
 mod db;
 
-use api::hello::AppStateWithCounter;
 use api::GroupService;
+use api::hello::AppStateWithCounter;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
