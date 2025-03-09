@@ -1,7 +1,7 @@
 use native_db::{self, Builder, Database, db_type};
 
 pub mod group;
-mod models;
+pub mod models;
 pub mod user;
 
 pub fn test_native() -> Result<Database<'static>, db_type::Error> {

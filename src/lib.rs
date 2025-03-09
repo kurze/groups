@@ -1,3 +1,3 @@
 // pub mod password;
-// pub mod db;
+pub mod db;
 pub mod api;
