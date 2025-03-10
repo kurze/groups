@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h2>Welcome to Groups App</h2>
+    <p>This is a simple application to manage groups.</p>
+    
+    <div hx-get="/api/hello" hx-trigger="load" hx-swap="innerHTML">
+        Loading counter...
+    </div>
+
+    <div class="cta-buttons">
+        <a href="/groups" class="button">View All Groups</a>
+    </div>
+{% endblock %}

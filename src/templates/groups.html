@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h2>Groups</h2>
+    
+    <div class="group-list" hx-get="/api/groups" hx-trigger="load" hx-swap="innerHTML">
+        Loading groups...
+    </div>
+    
+    <div class="group-form">
+        <h3>Create New Group</h3>
+        <form hx-post="/api/groups" hx-swap="beforeend" hx-target=".group-list">
+            <div class="form-group">
+                <label for="name">Group Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description"></textarea>
+            </div>
+            <button type="submit">Create Group</button>
+        </form>
+    </div>
+{% endblock %}

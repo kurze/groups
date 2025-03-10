@@ -7,11 +7,15 @@ pub struct AppStateWithCounter {
 }
 
 // Hello endpoint handler
-#[get("/")]
+#[get("/api/hello")]
 pub async fn hello_service(data: web::Data<AppStateWithCounter>) -> impl Responder {
     let mut counter = data.counter.lock().unwrap();
     *counter += 1;
-    HttpResponse::Ok().body(format!("Request number: {counter}"))
+    
+    // Return HTML for HTMZ instead of plain text
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(format!("<div>Request number: <strong>{}</strong></div>", counter))
 }
 
 #[cfg(test)]
@@ -35,18 +39,18 @@ mod tests {
         .await;
 
         // First request
-        let req = test::TestRequest::get().uri("/").to_request();
+        let req = test::TestRequest::get().uri("/api/hello").to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
         let body = test::read_body(resp).await;
-        assert_eq!(body, "Request number: 1");
+        assert!(String::from_utf8_lossy(&body).contains("Request number: <strong>1</strong>"));
 
         // Second request - counter should increment
-        let req = test::TestRequest::get().uri("/").to_request();
+        let req = test::TestRequest::get().uri("/api/hello").to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
         let body = test::read_body(resp).await;
-        assert_eq!(body, "Request number: 2");
+        assert!(String::from_utf8_lossy(&body).contains("Request number: <strong>2</strong>"));
 
         // Verify counter state directly
         let counter = *app_state.counter.lock().unwrap();
