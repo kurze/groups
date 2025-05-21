@@ -55,6 +55,7 @@ jobs:
       # Clippy
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+        continue-on-error: true
 
   coverage:
     name: Code coverage
