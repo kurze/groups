@@ -11,11 +11,14 @@ pub struct AppStateWithCounter {
 pub async fn hello_service(data: web::Data<AppStateWithCounter>) -> impl Responder {
     let mut counter = data.counter.lock().unwrap();
     *counter += 1;
-    
+
     // Return HTML for HTMZ instead of plain text
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(format!("<div>Request number: <strong>{}</strong></div>", counter))
+        .body(format!(
+            "<div>Request number: <strong>{}</strong></div>",
+            counter
+        ))
 }
 
 #[cfg(test)]
