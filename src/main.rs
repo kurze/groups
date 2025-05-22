@@ -1,5 +1,5 @@
-use actix_web::{App, HttpServer, web, middleware, HttpResponse};
 use actix_files as fs;
+use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use db::user::UserService;
 use std::sync::Arc;
 use tera::Tera;
