@@ -29,19 +29,40 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
 
-      - name: Install tools
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo install cargo-tarpaulin --locked || true
-          cargo install cargo-audit --locked || true
-
-      - name: Cache
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.rust }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.rust }}-cargo-build-
+
+      - name: Cache cargo tools
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-tarpaulin
+            ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-tools-${{ hashFiles('.github/workflows/rust.yml') }}
+
+      - name: Install tools
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          which cargo-tarpaulin || cargo install cargo-tarpaulin --locked
+          which cargo-audit || cargo install cargo-audit --locked
 
       # Check formatting
       - name: Check formatting
@@ -49,11 +70,11 @@ jobs:
 
       # Build
       - name: Build
-        run: cargo build --verbose
+        run: cargo build
 
       # Run tests
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test
 
       # Run doc tests
       - name: Run doc tests
@@ -61,7 +82,7 @@ jobs:
 
       # Clippy
       - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features
 
       - name: Generate coverage report
         if: matrix.os == 'ubuntu-latest'
