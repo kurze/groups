@@ -28,6 +28,13 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
+
+      - name: Install tools
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-tarpaulin --locked || true
+          cargo install cargo-audit --locked || true
+
       - name: Cache
         uses: actions/cache@v4
         with:
@@ -35,7 +42,7 @@ jobs:
             ~/.cargo
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       # Check formatting
       - name: Check formatting
         run: cargo fmt -- --check
@@ -43,56 +50,29 @@ jobs:
       # Build
       - name: Build
         run: cargo build --verbose
-      
+
       # Run tests
       - name: Run tests
         run: cargo test --verbose
-      
+
       # Run doc tests
       - name: Run doc tests
         run: cargo test --doc
-      
+
       # Clippy
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
-        continue-on-error: true
 
-  coverage:
-    name: Code coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin || true
       - name: Generate coverage report
+        if: matrix.os == 'ubuntu-latest'
         run: cargo tarpaulin --out Xml
+
       - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  security_audit:
-    name: Security audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: ⚡ Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install cargo-audit
-        run: cargo install cargo-audit ||true
       - name: Run security audit
+        if: matrix.os == 'ubuntu-latest'
         run: cargo audit
