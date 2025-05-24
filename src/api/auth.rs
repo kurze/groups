@@ -1,4 +1,6 @@
 use crate::db::user::UserService;
+use super::{hash_password, verify_password};
+use actix_session::Session;
 use actix_web::{HttpResponse, Result, web};
 use serde::{Deserialize, Serialize};
 use tera::Tera;
@@ -30,20 +32,57 @@ pub async fn login_page(tmpl: web::Data<Tera>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
 }
 
-pub async fn login(form: web::Form<LoginRequest>, tmpl: web::Data<Tera>) -> Result<HttpResponse> {
-    // TODO: Implement actual authentication logic
-    // For now, just return a success/failure message
-
+pub async fn login(
+    form: web::Form<LoginRequest>,
+    user_service: web::Data<UserService<'static>>,
+    session: Session,
+    _tmpl: web::Data<Tera>,
+) -> Result<HttpResponse> {
     let mut ctx = tera::Context::new();
 
-    if form.email == "test@example.com" && form.password == "password" {
-        // Success - return a success fragment
-        ctx.insert("message", "Login successful!");
-        ctx.insert("success", &true);
-    } else {
-        // Failure - return an error fragment
-        ctx.insert("message", "Invalid email or password");
-        ctx.insert("success", &false);
+    // Look up user by email
+    match user_service.get_by_email(form.email.clone()) {
+        Ok(Some(user)) => {
+            // User exists, check password
+            if let Some(password_hash) = &user.password_hash {
+                match verify_password(form.password.as_bytes(), password_hash) {
+                    Ok(true) => {
+                        // Password is correct
+                        // Store user info in session
+                        session.insert("user_id", user.id).unwrap();
+                        session.insert("user_email", &user.email).unwrap();
+                        session.insert("user_name", &user.name).unwrap();
+                        
+                        ctx.insert("message", "Login successful!");
+                        ctx.insert("success", &true);
+                    }
+                    Ok(false) => {
+                        // Password is incorrect
+                        ctx.insert("message", "Invalid email or password");
+                        ctx.insert("success", &false);
+                    }
+                    Err(_) => {
+                        // Error verifying password
+                        ctx.insert("message", "Authentication error");
+                        ctx.insert("success", &false);
+                    }
+                }
+            } else {
+                // User has no password set (legacy user)
+                ctx.insert("message", "Please reset your password");
+                ctx.insert("success", &false);
+            }
+        }
+        Ok(None) => {
+            // User not found
+            ctx.insert("message", "Invalid email or password");
+            ctx.insert("success", &false);
+        }
+        Err(_) => {
+            // Database error
+            ctx.insert("message", "Authentication error");
+            ctx.insert("success", &false);
+        }
     }
 
     // Return just the form fragment for htmz to replace
@@ -110,13 +149,22 @@ pub async fn register(
             // Create new user
             let name = form.email.split('@').next().unwrap_or("User").to_string();
 
-            match user_service.create(form.email.clone(), name) {
-                Ok(_) => {
-                    ctx.insert("message", "Registration successful! Please login.");
-                    ctx.insert("success", &true);
+            // Hash the password
+            match hash_password(form.password.as_bytes()) {
+                Ok(password_hash) => {
+                    match user_service.create_with_password(form.email.clone(), name, password_hash) {
+                        Ok(_) => {
+                            ctx.insert("message", "Registration successful! Please login.");
+                            ctx.insert("success", &true);
+                        }
+                        Err(e) => {
+                            ctx.insert("message", &format!("Registration failed: {}", e));
+                            ctx.insert("success", &false);
+                        }
+                    }
                 }
-                Err(e) => {
-                    ctx.insert("message", &format!("Registration failed: {}", e));
+                Err(_) => {
+                    ctx.insert("message", "Failed to process password");
                     ctx.insert("success", &false);
                 }
             }
@@ -162,4 +210,13 @@ pub async fn register(
     })?;
 
     Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
+}
+
+pub async fn logout(session: Session) -> Result<HttpResponse> {
+    // Clear the session
+    session.clear();
+    
+    Ok(HttpResponse::Found()
+        .append_header(("Location", "/"))
+        .finish())
 }

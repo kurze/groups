@@ -37,6 +37,19 @@ impl<'a> UserService<'a> {
         Ok(user)
     }
 
+    // Create a new user with password
+    pub fn create_with_password(&self, email: String, name: String, password_hash: String) -> Result<User, db_type::Error> {
+        let mut user = User::new(email);
+        user.name = name;
+        user.password_hash = Some(password_hash);
+
+        let rw = self.db.rw_transaction()?;
+        rw.insert(user.clone())?;
+        rw.commit()?;
+
+        Ok(user)
+    }
+
     // Read user by ID
     pub fn get_by_id(&self, id: u32) -> Result<Option<User>, db_type::Error> {
         let r = self.db.r_transaction()?;

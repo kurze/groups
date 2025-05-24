@@ -1,10 +1,12 @@
 use actix_files as fs;
-use actix_web::{App, HttpResponse, HttpServer, middleware, web};
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+use actix_web::{App, HttpResponse, HttpServer, middleware, web, cookie::Key};
 use db::user::UserService;
 use std::sync::Arc;
 use tera::Tera;
 mod api;
 mod db;
+mod password;
 
 use api::GroupService;
 use api::hello::AppStateWithCounter;
@@ -38,6 +40,10 @@ async fn main() -> std::io::Result<()> {
     // std::env::set_var("RUST_LOG", "debug");
     // std::env::set_var("RUST_BACKTRACE", "1");
 
+    // Generate a random key for session encryption
+    // In production, this should be loaded from environment
+    let secret_key = Key::generate();
+
     HttpServer::new(move || {
         App::new()
             .app_data(counter.clone())
@@ -52,6 +58,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/login").to(api::auth::login_page))
             .service(web::resource("/register").to(api::auth::register_page))
             .service(web::resource("/auth/login").route(web::post().to(api::auth::login)))
+            .service(web::resource("/logout").to(api::auth::logout))
             .service(web::resource("/auth/register").route(web::post().to(api::auth::register)))
             // API Routes
             .service(api::hello_service)
@@ -63,6 +70,11 @@ async fn main() -> std::io::Result<()> {
             // Default 404 handler
             .default_service(web::route().to(not_found))
             .wrap(middleware::Logger::default())
+            .wrap(
+                SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
+                    .cookie_secure(false) // Set to true in production with HTTPS
+                    .build()
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
@@ -70,8 +82,20 @@ async fn main() -> std::io::Result<()> {
 }
 
 // Page handlers
-async fn index(tmpl: web::Data<Tera>) -> HttpResponse {
-    let context = tera::Context::new();
+async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
+    let mut context = tera::Context::new();
+    
+    // Check if user is logged in
+    if let Ok(Some(user_email)) = session.get::<String>("user_email") {
+        context.insert("user_email", &user_email);
+        if let Ok(Some(user_name)) = session.get::<String>("user_name") {
+            context.insert("user_name", &user_name);
+        }
+        context.insert("is_logged_in", &true);
+    } else {
+        context.insert("is_logged_in", &false);
+    }
+    
     let rendered = tmpl.render("index.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
         "Template error".to_string()
@@ -79,8 +103,20 @@ async fn index(tmpl: web::Data<Tera>) -> HttpResponse {
     HttpResponse::Ok().content_type("text/html").body(rendered)
 }
 
-async fn groups_page(tmpl: web::Data<Tera>) -> HttpResponse {
-    let context = tera::Context::new();
+async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
+    let mut context = tera::Context::new();
+    
+    // Check if user is logged in
+    if let Ok(Some(user_email)) = session.get::<String>("user_email") {
+        context.insert("user_email", &user_email);
+        if let Ok(Some(user_name)) = session.get::<String>("user_name") {
+            context.insert("user_name", &user_name);
+        }
+        context.insert("is_logged_in", &true);
+    } else {
+        context.insert("is_logged_in", &false);
+    }
+    
     let rendered = tmpl.render("groups.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
         "Template error".to_string()

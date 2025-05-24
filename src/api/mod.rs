@@ -10,3 +10,6 @@ pub use hello::hello_service;
 
 // Re-export group service for API layer to use
 pub use crate::db::group::GroupService;
+
+// Re-export password functions for API layer
+pub use crate::password::{hash_password, verify_password};

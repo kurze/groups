@@ -38,9 +38,22 @@ test.describe('Login Page', () => {
   });
 
   test('should login successfully with valid credentials', async ({ page }) => {
-    // Fill in valid credentials
-    await page.fill('#email', 'test@example.com');
-    await page.fill('#password', 'password');
+    // First register a user
+    await page.goto('http://localhost:8080/register');
+    const testEmail = `testlogin${Date.now()}@example.com`;
+    const testPassword = 'password123';
+    
+    await page.fill('#email', testEmail);
+    await page.fill('#password', testPassword);
+    await page.click('button[type="submit"]');
+    
+    // Wait for registration success
+    await expect(page.locator('.alert-success')).toBeVisible();
+    await page.waitForTimeout(2000);
+    
+    // Now we should be on login page, login with the created user
+    await page.fill('#email', testEmail);
+    await page.fill('#password', testPassword);
 
     // Submit the form
     await page.click('button[type="submit"]');
@@ -93,5 +106,16 @@ test.describe('Login Page', () => {
     const form = page.locator('form');
     await expect(form).toHaveAttribute('target', 'htmz');
     await expect(form).toHaveAttribute('action', '/auth/login#login-form');
+  });
+
+  test('should handle logout correctly', async ({ page }) => {
+    // Navigate to logout
+    await page.goto('http://localhost:8080/logout');
+    
+    // Should redirect to home page
+    await expect(page).toHaveURL('http://localhost:8080/');
+    
+    // Verify we're on the home page
+    await expect(page.locator('h2')).toHaveText('Welcome to Groups App');
   });
 });

@@ -24,10 +24,27 @@ header h1 {
     margin-bottom: 0.5rem;
 }
 
+nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 nav a {
-    margin-right: 1rem;
     text-decoration: none;
     color: #0066cc;
+}
+
+.auth-menu {
+    margin-left: auto;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.user-info {
+    color: #666;
+    font-size: 0.9rem;
 }
 
 main {
