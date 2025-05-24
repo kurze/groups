@@ -103,8 +103,8 @@ button:hover, .button:hover {
     opacity: 0.5;
 }
 
-/* Login page styles */
-.login-container {
+/* Login and Registration page styles */
+.login-container, .register-container {
     max-width: 400px;
     margin: 2rem auto;
     padding: 2rem;
@@ -113,7 +113,7 @@ button:hover, .button:hover {
     background-color: #fff;
 }
 
-.login-container h2 {
+.login-container h2, .register-container h2 {
     text-align: center;
     margin-bottom: 1.5rem;
 }

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="register-container">
+    <h2>Register</h2>
+
+    <form action="/auth/register#register-form" method="post" target="htmz">
+        <div id="register-form">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Register</button>
+            </div>
+
+            <div class="form-links">
+                <a href="/login">Already have an account? Login</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

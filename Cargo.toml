@@ -17,6 +17,7 @@ rand = "0.9.1"
 thiserror = "2"
 tera = "1"
 actix-files = "0.6"
+uuid = { version = "1", features = ["v4", "serde"] }
 
 # [build]
 # rustflags = ["- C", "target-cpu=native"]

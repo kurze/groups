@@ -50,7 +50,9 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/").to(index))
             .service(web::resource("/groups").to(groups_page))
             .service(web::resource("/login").to(api::auth::login_page))
+            .service(web::resource("/register").to(api::auth::register_page))
             .service(web::resource("/auth/login").route(web::post().to(api::auth::login)))
+            .service(web::resource("/auth/register").route(web::post().to(api::auth::register)))
             // API Routes
             .service(api::hello_service)
             .service(
