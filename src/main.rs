@@ -29,7 +29,7 @@ async fn main() -> std::io::Result<()> {
     let counter = web::Data::new(AppStateWithCounter {
         counter: std::sync::Mutex::new(0),
     });
-    let user_service = UserService::new(db_arc.clone());
+    let user_service = web::Data::new(UserService::new(db_arc.clone()));
     let group_service = web::Data::new(GroupService::new(db_arc.clone()));
 
     println!("Number of users: {}", user_service.count().unwrap());
@@ -41,17 +41,23 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(counter.clone())
+            .app_data(user_service.clone())
             .app_data(group_service.clone())
             .app_data(tera_data.clone())
             // Static files
             .service(fs::Files::new("/static", "src/static").show_files_listing())
-            // API Routes
-            .service(api::hello_service)
-            .configure(api::configure_groups_routes)
-            .configure(api::configure_html_routes) // Add the HTML API routes
             // HTML Routes
             .service(web::resource("/").to(index))
             .service(web::resource("/groups").to(groups_page))
+            .service(web::resource("/login").to(api::auth::login_page))
+            .service(web::resource("/auth/login").route(web::post().to(api::auth::login)))
+            // API Routes
+            .service(api::hello_service)
+            .service(
+                web::scope("/api")
+                    .configure(api::configure_groups_routes)
+                    .configure(api::configure_html_routes),
+            )
             // Default 404 handler
             .default_service(web::route().to(not_found))
             .wrap(middleware::Logger::default())

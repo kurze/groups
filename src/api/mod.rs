@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod groups_api;
 pub mod groups_html;
 pub mod hello;
