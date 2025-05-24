@@ -1,0 +1,26 @@
+{
+  "name": "groups",
+  "version": "1.0.0",
+  "description": "Toy project to learn Rust The goal is to make a Meetup equivalent for our own group at first  and then may be open up more broadly",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kurze/groups.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kurze/groups/issues"
+  },
+  "homepage": "https://github.com/kurze/groups#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}
