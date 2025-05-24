@@ -1,0 +1,43 @@
+warning: unused imports: `CreateGroupRequest` and `GroupResponse`
+ --> src/api/groups_html.rs:1:30
+  |
+1 | use crate::api::groups_api::{CreateGroupRequest, GroupResponse};
+  |                              ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `tmpl`
+  --> src/api/auth.rs:35:5
+   |
+35 |     tmpl: web::Data<Tera>,
+   |     ^^^^ help: if this is intentional, prefix it with an underscore: `_tmpl`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: field `password` is never read
+  --> src/api/auth.rs:15:5
+   |
+13 | pub struct RegisterRequest {
+   |            --------------- field in this struct
+14 |     email: String,
+15 |     password: String,
+   |     ^^^^^^^^
+   |
+   = note: `RegisterRequest` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `groups` (lib) generated 3 warnings (run `cargo fix --lib -p groups` to apply 1 suggestion)
+warning: field `description` is never read
+  --> src/api/groups_html.rs:10:9
+   |
+8  | pub struct GroupForm {
+   |            --------- field in this struct
+9  |     pub name: String,
+10 |     pub description: Option<String>,
+   |         ^^^^^^^^^^^
+
+warning: `groups` (bin "groups") generated 4 warnings (3 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.31s
+     Running `target/debug/groups`
+Number of users: 1
+Server running at http://127.0.0.1:8080/

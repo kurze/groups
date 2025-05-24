@@ -1,11 +1,12 @@
 use actix_files as fs;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{App, HttpResponse, HttpServer, middleware, web, cookie::Key};
+use actix_web::{App, HttpResponse, HttpServer, middleware as actix_middleware, web, cookie::Key};
 use db::user::UserService;
 use std::sync::Arc;
 use tera::Tera;
 mod api;
 mod db;
+mod middleware;
 mod password;
 
 use api::GroupService;
@@ -60,6 +61,12 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/auth/login").route(web::post().to(api::auth::login)))
             .service(web::resource("/logout").to(api::auth::logout))
             .service(web::resource("/auth/register").route(web::post().to(api::auth::register)))
+            // Protected routes
+            .service(
+                web::resource("/groups/new")
+                    .wrap(crate::middleware::auth::RequireAuth)
+                    .to(new_group_page)
+            )
             // API Routes
             .service(api::hello_service)
             .service(
@@ -69,7 +76,7 @@ async fn main() -> std::io::Result<()> {
             )
             // Default 404 handler
             .default_service(web::route().to(not_found))
-            .wrap(middleware::Logger::default())
+            .wrap(actix_middleware::Logger::default())
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
                     .cookie_secure(false) // Set to true in production with HTTPS
@@ -118,6 +125,27 @@ async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> 
     }
     
     let rendered = tmpl.render("groups.html", &context).unwrap_or_else(|e| {
+        eprintln!("Template error: {}", e);
+        "Template error".to_string()
+    });
+    HttpResponse::Ok().content_type("text/html").body(rendered)
+}
+
+async fn new_group_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
+    let mut context = tera::Context::new();
+    
+    // Check if user is logged in
+    if let Ok(Some(user_email)) = session.get::<String>("user_email") {
+        context.insert("user_email", &user_email);
+        if let Ok(Some(user_name)) = session.get::<String>("user_name") {
+            context.insert("user_name", &user_name);
+        }
+        context.insert("is_logged_in", &true);
+    } else {
+        context.insert("is_logged_in", &false);
+    }
+    
+    let rendered = tmpl.render("groups_new.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
         "Template error".to_string()
     });

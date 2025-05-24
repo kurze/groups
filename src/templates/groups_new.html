@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Create New Group</h2>
+    
+    <form id="new-group-form" action="/api/groups" method="POST" target="htmz">
+        <div class="form-group">
+            <label for="name">Group Name:</label>
+            <input type="text" id="name" name="name" required minlength="3" maxlength="100">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" rows="4" maxlength="500"></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit">Create Group</button>
+            <a href="/groups" class="btn-secondary">Cancel</a>
+        </div>
+    </form>
+    
+    <div id="group-result"></div>
+</div>
+{% endblock %}
