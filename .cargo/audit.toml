@@ -1,0 +1,20 @@
+[advisories]
+# Ignore advisories for crates we don't use or have mitigated
+# Format: "RUSTSEC-YYYY-NNNN"
+
+# Currently no ignored advisories - we've removed MySQL dependencies
+# that were causing RUSTSEC-2023-0071
+
+[database]
+# Automatically fetch the latest advisory database
+fetch = true
+# Use the latest available advisories
+urls = ["https://github.com/RustSec/advisory-db.git"]
+
+[packages]
+# Package-specific audit configuration
+# Currently using default settings
+
+[yanked]
+# Check for yanked crates (withdrawn from crates.io)
+enabled = true
