@@ -11,16 +11,6 @@ pub struct Group {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-impl Group {
-    pub fn new(name: String) -> Self {
-        Self {
-            id: 0, // Will be set by database
-            name,
-            created_at: chrono::Utc::now(),
-            deleted_at: None,
-        }
-    }
-}
 
 // Data transfer object for creating groups
 #[derive(Serialize, Deserialize, Debug, Clone)]

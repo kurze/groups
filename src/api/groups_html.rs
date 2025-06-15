@@ -6,7 +6,6 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct GroupForm {
     pub name: String,
-    pub description: Option<String>,
 }
 
 // Get all groups as HTML

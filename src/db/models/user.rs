@@ -14,20 +14,6 @@ pub struct User {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-impl User {
-    pub fn new(email: String) -> Self {
-        let now = chrono::Utc::now();
-        Self {
-            id: 0, // Will be set by database
-            email,
-            name: String::new(),
-            password_hash: None,
-            created_at: now,
-            updated_at: now,
-            deleted_at: None,
-        }
-    }
-}
 
 // Data transfer object for creating users
 #[derive(Serialize, Deserialize, Debug, Clone)]

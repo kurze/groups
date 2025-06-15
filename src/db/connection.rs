@@ -6,8 +6,6 @@ use thiserror::Error;
 pub enum DatabaseError {
     #[error("Database connection error: {0}")]
     Connection(#[from] sqlx::Error),
-    #[error("Environment error: {0}")]
-    Environment(String),
     #[error("Migration error: {0}")]
     Migration(String),
 }

@@ -2,7 +2,7 @@ use super::{hash_password, verify_password};
 use crate::db::user::UserService;
 use actix_session::Session;
 use actix_web::{HttpResponse, Result, web};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tera::Tera;
 
 #[derive(Debug, Deserialize)]
@@ -17,11 +17,6 @@ pub struct RegisterRequest {
     password: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct LoginResponse {
-    success: bool,
-    message: String,
-}
 
 pub async fn login_page(tmpl: web::Data<Tera>) -> Result<HttpResponse> {
     let ctx = tera::Context::new();
