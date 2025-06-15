@@ -1,5 +1,5 @@
+use crate::db::connection::{DatabaseError, DbPool};
 use crate::db::models::User;
-use crate::db::connection::{DbPool, DatabaseError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -28,7 +28,7 @@ impl UserService {
     // Create a new user
     pub async fn create(&self, email: String, name: String) -> Result<User, UserError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *"
+            "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *",
         )
         .bind(&email)
         .bind(&name)
@@ -39,9 +39,14 @@ impl UserService {
     }
 
     // Create a new user with password
-    pub async fn create_with_password(&self, email: String, name: String, password_hash: String) -> Result<User, UserError> {
+    pub async fn create_with_password(
+        &self,
+        email: String,
+        name: String,
+        password_hash: String,
+    ) -> Result<User, UserError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING *"
+            "INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING *",
         )
         .bind(&email)
         .bind(&name)
@@ -54,24 +59,20 @@ impl UserService {
 
     // Read user by ID
     pub async fn get_by_id(&self, id: i32) -> Result<Option<User>, UserError> {
-        let user = sqlx::query_as::<_, User>(
-            "SELECT * FROM users WHERE id = $1"
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
 
         Ok(user)
     }
 
     // Read user by email
     pub async fn get_by_email(&self, email: String) -> Result<Option<User>, UserError> {
-        let user = sqlx::query_as::<_, User>(
-            "SELECT * FROM users WHERE email = $1"
-        )
-        .bind(&email)
-        .fetch_optional(&self.pool)
-        .await?;
+        let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+            .bind(&email)
+            .fetch_optional(&self.pool)
+            .await?;
 
         Ok(user)
     }
@@ -97,12 +98,10 @@ impl UserService {
 
     // Delete user by ID (soft delete)
     pub async fn delete(&self, id: i32) -> Result<(), UserError> {
-        sqlx::query(
-            "UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -112,7 +111,7 @@ impl UserService {
     pub async fn hard_delete(&self, id: i32) -> Result<(), UserError> {
         // First check if user exists and is soft-deleted
         let user = self.get_by_id(id).await?;
-        
+
         match user {
             Some(user) => {
                 // Check if the user is soft-deleted
@@ -125,7 +124,7 @@ impl UserService {
                     .bind(id)
                     .execute(&self.pool)
                     .await?;
-                
+
                 Ok(())
             }
             None => Ok(()), // User doesn't exist, nothing to delete
@@ -135,7 +134,7 @@ impl UserService {
     // List all active users
     pub async fn list_active(&self) -> Result<Vec<User>, UserError> {
         let users = sqlx::query_as::<_, User>(
-            "SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC"
+            "SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
         )
         .fetch_all(&self.pool)
         .await?;

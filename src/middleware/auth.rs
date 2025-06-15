@@ -1,11 +1,11 @@
 use actix_session::SessionExt;
 use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpResponse,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
 };
 use futures_util::future::LocalBoxFuture;
 use std::{
-    future::{ready, Ready},
+    future::{Ready, ready},
     rc::Rc,
 };
 
@@ -50,7 +50,7 @@ where
         Box::pin(async move {
             // Extract session from request
             let session = req.get_session();
-            
+
             // Check if user is logged in
             if let Ok(Some(_user_id)) = session.get::<u32>("user_id") {
                 // User is authenticated, proceed with request
@@ -60,7 +60,7 @@ where
                 let response = HttpResponse::Found()
                     .append_header(("Location", "/login"))
                     .finish();
-                
+
                 Ok(req.into_response(response))
             }
         })

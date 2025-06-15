@@ -1,8 +1,8 @@
 use actix_files as fs;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{App, HttpResponse, HttpServer, middleware as actix_middleware, web, cookie::Key};
-use db::user::UserService;
+use actix_web::{App, HttpResponse, HttpServer, cookie::Key, middleware as actix_middleware, web};
 use db::group::GroupService;
+use db::user::UserService;
 use std::env;
 use tera::Tera;
 mod api;
@@ -16,20 +16,19 @@ use api::hello::AppStateWithCounter;
 async fn main() -> std::io::Result<()> {
     // Load environment variables
     dotenvy::dotenv().ok();
-    
+
     // Initialize database
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-        
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
     let pool = db::create_pool(&database_url)
         .await
         .expect("Failed to create database pool");
-        
+
     // Run migrations
     db::run_migrations(&pool)
         .await
         .expect("Failed to run migrations");
-        
+
     // Check database health
     match db::health_check(&pool).await {
         Ok(true) => println!("Database connection: OK"),
@@ -68,7 +67,10 @@ async fn main() -> std::io::Result<()> {
         .parse::<u16>()
         .expect("PORT must be a valid number");
 
-    println!("Number of users: {}", user_service.count().await.unwrap_or(0));
+    println!(
+        "Number of users: {}",
+        user_service.count().await.unwrap_or(0)
+    );
     println!("Server running at http://{}:{}/", host, port);
 
     // Set up logging
@@ -85,12 +87,16 @@ async fn main() -> std::io::Result<()> {
             if key.len() >= 64 {
                 Key::from(key.as_bytes())
             } else {
-                eprintln!("Warning: SESSION_SECRET_KEY too short (minimum 64 characters), using generated key");
+                eprintln!(
+                    "Warning: SESSION_SECRET_KEY too short (minimum 64 characters), using generated key"
+                );
                 Key::generate()
             }
         }
         Err(_) => {
-            eprintln!("Warning: SESSION_SECRET_KEY not set, using generated key (not suitable for production)");
+            eprintln!(
+                "Warning: SESSION_SECRET_KEY not set, using generated key (not suitable for production)"
+            );
             Key::generate()
         }
     };
@@ -115,7 +121,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/groups/new")
                     .wrap(crate::middleware::auth::RequireAuth)
-                    .to(new_group_page)
+                    .to(new_group_page),
             )
             // API Routes
             .service(api::hello_service)
@@ -130,7 +136,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
                     .cookie_secure(false) // Set to true in production with HTTPS
-                    .build()
+                    .build(),
             )
     })
     .bind((host.as_str(), port))?
@@ -141,7 +147,7 @@ async fn main() -> std::io::Result<()> {
 // Page handlers
 async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
     let mut context = tera::Context::new();
-    
+
     // Check if user is logged in
     if let Ok(Some(user_email)) = session.get::<String>("user_email") {
         context.insert("user_email", &user_email);
@@ -152,7 +158,7 @@ async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpRe
     } else {
         context.insert("is_logged_in", &false);
     }
-    
+
     let rendered = tmpl.render("index.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
         "Template error".to_string()
@@ -162,7 +168,7 @@ async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpRe
 
 async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
     let mut context = tera::Context::new();
-    
+
     // Check if user is logged in
     if let Ok(Some(user_email)) = session.get::<String>("user_email") {
         context.insert("user_email", &user_email);
@@ -173,7 +179,7 @@ async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> 
     } else {
         context.insert("is_logged_in", &false);
     }
-    
+
     let rendered = tmpl.render("groups.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
         "Template error".to_string()
@@ -183,7 +189,7 @@ async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> 
 
 async fn new_group_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
     let mut context = tera::Context::new();
-    
+
     // Check if user is logged in
     if let Ok(Some(user_email)) = session.get::<String>("user_email") {
         context.insert("user_email", &user_email);
@@ -194,11 +200,13 @@ async fn new_group_page(tmpl: web::Data<Tera>, session: actix_session::Session) 
     } else {
         context.insert("is_logged_in", &false);
     }
-    
-    let rendered = tmpl.render("groups_new.html", &context).unwrap_or_else(|e| {
-        eprintln!("Template error: {}", e);
-        "Template error".to_string()
-    });
+
+    let rendered = tmpl
+        .render("groups_new.html", &context)
+        .unwrap_or_else(|e| {
+            eprintln!("Template error: {}", e);
+            "Template error".to_string()
+        });
     HttpResponse::Ok().content_type("text/html").body(rendered)
 }
 

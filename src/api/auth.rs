@@ -1,5 +1,5 @@
-use crate::db::user::UserService;
 use super::{hash_password, verify_password};
+use crate::db::user::UserService;
 use actix_session::Session;
 use actix_web::{HttpResponse, Result, web};
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ pub async fn login(
                         session.insert("user_id", user.id).unwrap();
                         session.insert("user_email", &user.email).unwrap();
                         session.insert("user_name", &user.name).unwrap();
-                        
+
                         ctx.insert("message", "Login successful!");
                         ctx.insert("success", &true);
                     }
@@ -152,7 +152,10 @@ pub async fn register(
             // Hash the password
             match hash_password(form.password.as_bytes()) {
                 Ok(password_hash) => {
-                    match user_service.create_with_password(form.email.clone(), name, password_hash).await {
+                    match user_service
+                        .create_with_password(form.email.clone(), name, password_hash)
+                        .await
+                    {
                         Ok(_) => {
                             ctx.insert("message", "Registration successful! Please login.");
                             ctx.insert("success", &true);
@@ -215,7 +218,7 @@ pub async fn register(
 pub async fn logout(session: Session) -> Result<HttpResponse> {
     // Clear the session
     session.clear();
-    
+
     Ok(HttpResponse::Found()
         .append_header(("Location", "/"))
         .finish())

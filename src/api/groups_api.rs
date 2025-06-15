@@ -1,7 +1,7 @@
 use crate::db::group::GroupService;
 use actix_web::{HttpResponse, Responder, delete, get, post, put, web};
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 // Data transfer objects
 #[derive(Serialize, Deserialize)]
@@ -28,10 +28,7 @@ pub struct UpdateGroupRequest {
 
 // Get a specific group by ID
 #[get("/groups/{id}")]
-pub async fn get_group(
-    path: web::Path<i32>,
-    service: web::Data<GroupService>,
-) -> impl Responder {
+pub async fn get_group(path: web::Path<i32>, service: web::Data<GroupService>) -> impl Responder {
     let group_id = path.into_inner();
 
     match service.get_by_id(group_id).await {
