@@ -25,7 +25,7 @@ services:
       - app
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18beta1-alpine
     container_name: groups_postgres
     environment:
       POSTGRES_DB: groups_dev
@@ -46,7 +46,7 @@ services:
       - groups_network
 
   postgres_test:
-    image: postgres:16-alpine
+    image: postgres:18beta1-alpine
     container_name: groups_postgres_test
     environment:
       POSTGRES_DB: groups_test
