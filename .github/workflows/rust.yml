@@ -72,8 +72,19 @@ jobs:
       - name: Build
         run: cargo build
 
+      # Setup PostgreSQL for tests
+      - name: Setup PostgreSQL
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '18beta1'
+          postgresql db: 'groups_test'
+          postgresql user: 'groups_user'
+          postgresql password: 'groups_password'
+
       # Run tests
       - name: Run tests
+        env:
+          DATABASE_TEST_URL: postgresql://groups_user:groups_password@localhost:5432/groups_test
         run: cargo test
 
       # Run doc tests
