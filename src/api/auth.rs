@@ -17,7 +17,6 @@ pub struct RegisterRequest {
     password: String,
 }
 
-
 pub async fn login_page(tmpl: web::Data<Tera>) -> Result<HttpResponse> {
     let ctx = tera::Context::new();
     let rendered = tmpl.render("login.html", &ctx).map_err(|e| {

@@ -14,7 +14,6 @@ pub struct User {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-
 // Data transfer object for creating users
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CreateUser {

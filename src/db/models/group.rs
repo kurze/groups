@@ -11,7 +11,6 @@ pub struct Group {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-
 // Data transfer object for creating groups
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CreateGroup {
