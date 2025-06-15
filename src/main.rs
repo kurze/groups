@@ -144,8 +144,8 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-// Page handlers
-async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
+// Helper function to create template context with session data
+fn create_template_context(session: &actix_session::Session) -> tera::Context {
     let mut context = tera::Context::new();
 
     // Check if user is logged in
@@ -158,6 +158,13 @@ async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpRe
     } else {
         context.insert("is_logged_in", &false);
     }
+
+    context
+}
+
+// Page handlers
+async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
+    let context = create_template_context(&session);
 
     let rendered = tmpl.render("index.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
@@ -167,18 +174,7 @@ async fn index(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpRe
 }
 
 async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
-    let mut context = tera::Context::new();
-
-    // Check if user is logged in
-    if let Ok(Some(user_email)) = session.get::<String>("user_email") {
-        context.insert("user_email", &user_email);
-        if let Ok(Some(user_name)) = session.get::<String>("user_name") {
-            context.insert("user_name", &user_name);
-        }
-        context.insert("is_logged_in", &true);
-    } else {
-        context.insert("is_logged_in", &false);
-    }
+    let context = create_template_context(&session);
 
     let rendered = tmpl.render("groups.html", &context).unwrap_or_else(|e| {
         eprintln!("Template error: {}", e);
@@ -188,18 +184,7 @@ async fn groups_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> 
 }
 
 async fn new_group_page(tmpl: web::Data<Tera>, session: actix_session::Session) -> HttpResponse {
-    let mut context = tera::Context::new();
-
-    // Check if user is logged in
-    if let Ok(Some(user_email)) = session.get::<String>("user_email") {
-        context.insert("user_email", &user_email);
-        if let Ok(Some(user_name)) = session.get::<String>("user_name") {
-            context.insert("user_name", &user_name);
-        }
-        context.insert("is_logged_in", &true);
-    } else {
-        context.insert("is_logged_in", &false);
-    }
+    let context = create_template_context(&session);
 
     let rendered = tmpl
         .render("groups_new.html", &context)
