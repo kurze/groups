@@ -1,26 +1,35 @@
-use native_db::{ToKey, native_db};
-use native_model::{Model, native_model};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+use chrono::{DateTime, Utc};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[native_model(id = 2, version = 1)]
-#[native_db]
-pub struct V1 {
-    #[primary_key]
-    pub id: u32,
-    #[secondary_key]
+// Current Group model for PostgreSQL
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, FromRow)]
+pub struct Group {
+    pub id: i32,
     pub name: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub deleted_at: Option<chrono::NaiveDateTime>,
+    pub created_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
-impl V1 {
+impl Group {
     pub fn new(name: String) -> Self {
         Self {
-            id: rand::random::<u32>(),
+            id: 0, // Will be set by database
             name,
-            created_at: chrono::Utc::now().naive_utc(),
+            created_at: chrono::Utc::now(),
             deleted_at: None,
         }
     }
+}
+
+// Data transfer object for creating groups
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CreateGroup {
+    pub name: String,
+}
+
+// Data transfer object for updating groups
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UpdateGroup {
+    pub name: String,
 }

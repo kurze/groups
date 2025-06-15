@@ -1,4 +1,3 @@
-use crate::api::groups_api::{CreateGroupRequest, GroupResponse};
 use crate::db::group::GroupService;
 use actix_web::{HttpResponse, Responder, get, post, web};
 use serde::Deserialize;
@@ -12,8 +11,8 @@ pub struct GroupForm {
 
 // Get all groups as HTML
 #[get("/api/groups")]
-pub async fn get_groups_html(service: web::Data<GroupService<'static>>) -> impl Responder {
-    match service.list_active() {
+pub async fn get_groups_html(service: web::Data<GroupService>) -> impl Responder {
+    match service.list_active().await {
         Ok(groups) if !groups.is_empty() => {
             let mut html = String::from("<div class=\"group-list-items\">");
 
@@ -51,7 +50,7 @@ pub async fn get_groups_html(service: web::Data<GroupService<'static>>) -> impl 
 #[post("/api/groups")]
 pub async fn create_group_html(
     form: web::Form<GroupForm>,
-    service: web::Data<GroupService<'static>>,
+    service: web::Data<GroupService>,
 ) -> impl Responder {
     // Validate group name is not empty
     if form.name.trim().is_empty() {
@@ -60,7 +59,7 @@ pub async fn create_group_html(
             .body("<div class=\"error\">Group name cannot be empty</div>");
     }
 
-    match service.create(form.name.clone()) {
+    match service.create(form.name.clone()).await {
         Ok(group) => {
             // Return just the HTML for the new group
             let html = format!(

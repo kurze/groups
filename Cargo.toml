@@ -5,8 +5,8 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-native_db = "0.8.1"
-native_model = "0.4.20"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "migrate"] }
+tokio = { version = "1", features = ["full"] }
 once_cell = "1.21.0"
 actix-web = "~4"
 serde = { version = "~1", features = ["derive"] }
@@ -20,6 +20,7 @@ actix-files = "0.6"
 actix-session = { version = "0.10", features = ["cookie-session"] }
 futures-util = "0.3"
 uuid = { version = "1", features = ["v4", "serde"] }
+env_logger = "0.11"
 
 # [build]
 # rustflags = ["- C", "target-cpu=native"]

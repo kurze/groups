@@ -34,14 +34,14 @@ pub async fn login_page(tmpl: web::Data<Tera>) -> Result<HttpResponse> {
 
 pub async fn login(
     form: web::Form<LoginRequest>,
-    user_service: web::Data<UserService<'static>>,
+    user_service: web::Data<UserService>,
     session: Session,
     _tmpl: web::Data<Tera>,
 ) -> Result<HttpResponse> {
     let mut ctx = tera::Context::new();
 
     // Look up user by email
-    match user_service.get_by_email(form.email.clone()) {
+    match user_service.get_by_email(form.email.clone()).await {
         Ok(Some(user)) => {
             // User exists, check password
             if let Some(password_hash) = &user.password_hash {
@@ -133,13 +133,13 @@ pub async fn register_page(tmpl: web::Data<Tera>) -> Result<HttpResponse> {
 
 pub async fn register(
     form: web::Form<RegisterRequest>,
-    user_service: web::Data<UserService<'static>>,
+    user_service: web::Data<UserService>,
     _tmpl: web::Data<Tera>,
 ) -> Result<HttpResponse> {
     let mut ctx = tera::Context::new();
 
     // Check if email already exists
-    match user_service.get_by_email(form.email.clone()) {
+    match user_service.get_by_email(form.email.clone()).await {
         Ok(Some(_)) => {
             // User already exists
             ctx.insert("message", "Email already registered");
@@ -152,7 +152,7 @@ pub async fn register(
             // Hash the password
             match hash_password(form.password.as_bytes()) {
                 Ok(password_hash) => {
-                    match user_service.create_with_password(form.email.clone(), name, password_hash) {
+                    match user_service.create_with_password(form.email.clone(), name, password_hash).await {
                         Ok(_) => {
                             ctx.insert("message", "Registration successful! Please login.");
                             ctx.insert("success", &true);

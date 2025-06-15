@@ -2,20 +2,46 @@ use actix_files as fs;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{App, HttpResponse, HttpServer, middleware as actix_middleware, web, cookie::Key};
 use db::user::UserService;
-use std::sync::Arc;
+use db::group::GroupService;
+use std::env;
 use tera::Tera;
 mod api;
 mod db;
 mod middleware;
 mod password;
 
-use api::GroupService;
 use api::hello::AppStateWithCounter;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let db = db::test_native().unwrap();
-    let db_arc: Arc<native_db::Database> = db.into();
+    // Load environment variables
+    dotenvy::dotenv().ok();
+    
+    // Initialize database
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+        
+    let pool = db::create_pool(&database_url)
+        .await
+        .expect("Failed to create database pool");
+        
+    // Run migrations
+    db::run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
+        
+    // Check database health
+    match db::health_check(&pool).await {
+        Ok(true) => println!("Database connection: OK"),
+        Ok(false) => {
+            eprintln!("Database health check failed");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Database connection error: {}", e);
+            std::process::exit(1);
+        }
+    }
 
     // Set up templating
     let mut tera = match Tera::new("src/templates/**/*") {
@@ -32,18 +58,42 @@ async fn main() -> std::io::Result<()> {
     let counter = web::Data::new(AppStateWithCounter {
         counter: std::sync::Mutex::new(0),
     });
-    let user_service = web::Data::new(UserService::new(db_arc.clone()));
-    let group_service = web::Data::new(GroupService::new(db_arc.clone()));
+    let user_service = web::Data::new(UserService::new(pool.clone()));
+    let group_service = web::Data::new(GroupService::new(pool.clone()));
 
-    println!("Number of users: {}", user_service.count().unwrap());
-    println!("Server running at http://127.0.0.1:8080/");
+    // Get configuration from environment
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse::<u16>()
+        .expect("PORT must be a valid number");
 
-    // std::env::set_var("RUST_LOG", "debug");
-    // std::env::set_var("RUST_BACKTRACE", "1");
+    println!("Number of users: {}", user_service.count().await.unwrap_or(0));
+    println!("Server running at http://{}:{}/", host, port);
 
-    // Generate a random key for session encryption
-    // In production, this should be loaded from environment
-    let secret_key = Key::generate();
+    // Set up logging
+    if env::var("RUST_LOG").is_err() {
+        unsafe {
+            env::set_var("RUST_LOG", "info");
+        }
+    }
+    env_logger::init();
+
+    // Get session secret key from environment or generate one for development
+    let secret_key = match env::var("SESSION_SECRET_KEY") {
+        Ok(key) => {
+            if key.len() >= 64 {
+                Key::from(key.as_bytes())
+            } else {
+                eprintln!("Warning: SESSION_SECRET_KEY too short (minimum 64 characters), using generated key");
+                Key::generate()
+            }
+        }
+        Err(_) => {
+            eprintln!("Warning: SESSION_SECRET_KEY not set, using generated key (not suitable for production)");
+            Key::generate()
+        }
+    };
 
     HttpServer::new(move || {
         App::new()
@@ -83,7 +133,7 @@ async fn main() -> std::io::Result<()> {
                     .build()
             )
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((host.as_str(), port))?
     .run()
     .await
 }

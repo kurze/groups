@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: groups_postgres
+    environment:
+      POSTGRES_DB: groups_dev
+      POSTGRES_USER: groups_user
+      POSTGRES_PASSWORD: groups_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U groups_user -d groups_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - groups_network
+
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: groups_postgres_test
+    environment:
+      POSTGRES_DB: groups_test
+      POSTGRES_USER: groups_user
+      POSTGRES_PASSWORD: groups_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U groups_user -d groups_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - groups_network
+    profiles:
+      - test
+
+volumes:
+  postgres_data:
+
+networks:
+  groups_network:
+    driver: bridge

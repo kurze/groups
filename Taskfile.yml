@@ -38,3 +38,68 @@ tasks:
   e2e-report:
     desc: Show Playwright test report
     cmd: npm run test:report
+
+  # Database tasks
+  db-up:
+    desc: Start PostgreSQL database containers
+    cmd: docker compose up -d postgres
+
+  db-down:
+    desc: Stop PostgreSQL database containers
+    cmd: docker compose down
+
+  db-reset:
+    desc: Reset development database (stop, remove volumes, start fresh)
+    cmd: |
+      docker compose down
+      docker volume rm groups_postgres_data || true
+      docker compose up -d postgres
+      sleep 5
+      echo "Database reset complete"
+
+  db-test-up:
+    desc: Start PostgreSQL test database
+    cmd: docker compose --profile test up -d postgres_test
+
+  db-test-down:
+    desc: Stop PostgreSQL test database
+    cmd: docker compose --profile test down
+
+  db-logs:
+    desc: Show database logs
+    cmd: docker compose logs -f postgres
+
+  db-shell:
+    desc: Connect to PostgreSQL database shell
+    cmd: docker exec -it groups_postgres psql -U groups_user -d groups_dev
+
+  db-test-shell:
+    desc: Connect to PostgreSQL test database shell
+    cmd: docker exec -it groups_postgres_test psql -U groups_user -d groups_test
+
+  db-health:
+    desc: Check database connection and health
+    cmd: |
+      echo "Checking development database..."
+      docker exec groups_postgres pg_isready -U groups_user -d groups_dev
+      echo "Checking test database..."
+      docker exec groups_postgres_test pg_isready -U groups_user -d groups_test || echo "Test database not running"
+
+  # Development workflow with database
+  dev:
+    desc: Start development environment (database + application)
+    deps:
+      - task: db-up
+    cmd: |
+      echo "Waiting for database to be ready..."
+      sleep 5
+      cargo run
+
+  dev-clean:
+    desc: Clean restart of development environment
+    deps:
+      - task: db-reset
+    cmd: |
+      echo "Starting clean development environment..."
+      sleep 5
+      cargo run
