@@ -11,6 +11,7 @@ env:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   test:
@@ -136,3 +137,72 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Integration test with Docker image (only on main branch)
+  integration-test:
+    name: Integration Test with Docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start PostgreSQL for integration tests
+        run: |
+          docker run -d --name postgres-integration \
+            -e POSTGRES_DB=groups_test \
+            -e POSTGRES_USER=groups_user \
+            -e POSTGRES_PASSWORD=groups_password \
+            -p 5432:5432 \
+            postgres:18beta1-alpine
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          timeout 30s bash -c 'until docker exec postgres-integration pg_isready -U groups_user -d groups_test; do sleep 1; done'
+
+      - name: Test application with Docker image
+        run: |
+          # Pull the latest image built by the Docker workflow
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          # Check if the image exists (it should from the Docker build workflow)
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "✅ Using cached Docker image: $IMAGE_TAG"
+            
+            # Run the application container
+            docker run -d --name groups-app \
+              --link postgres-integration:postgres \
+              -e DATABASE_URL="postgresql://groups_user:groups_password@postgres:5432/groups_test" \
+              -e RUST_LOG=info \
+              -e HOST=0.0.0.0 \
+              -e PORT=8080 \
+              -p 8080:8080 \
+              "$IMAGE_TAG"
+            
+            # Wait for app to be ready
+            timeout 30s bash -c 'until curl -f http://localhost:8080/ >/dev/null 2>&1; do sleep 1; done'
+            
+            # Basic health check
+            curl -f http://localhost:8080/ || exit 1
+            
+            echo "✅ Integration test passed with Docker image"
+          else
+            echo "⚠️ Docker image not found, skipping integration test"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop groups-app postgres-integration || true
+          docker rm groups-app postgres-integration || true

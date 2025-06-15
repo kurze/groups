@@ -2,51 +2,68 @@
 .git
 .gitignore
 
+# GitHub Actions
+.github/
+
 # Docker
 Dockerfile
 .dockerignore
 docker-compose.yml
 
-# Rust
+# Rust build artifacts
 target/
+Cargo.lock
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Environment files
-.env
-.env.local
-.env.example
+.env*
+!.env.production
 
 # Logs
 *.log
+logs/
 
 # Database
 db/
 *.db
 *.sqlite
 
-# Documentation
+# Documentation and planning
 README.md
 docs/
+plans/
+*.md
 
 # Task runner
 Taskfile.yml
 
-# Test files
+# Test files and reports
 tests/
 playwright-report/
 test-results/
+coverage/
 
-# Node modules (if any)
+# Node modules (for E2E tests)
 node_modules/
 package*.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Temporary files
 tmp/
 temp/
+.cache/
+
+# Development tools
+.env.example
+server.log
