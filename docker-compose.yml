@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  # Web application
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: groups_app
+    environment:
+      DATABASE_URL: postgresql://groups_user:groups_password@postgres:5432/groups_dev
+      RUST_LOG: info
+      HOST: 0.0.0.0
+      PORT: 8080
+      SESSION_SECRET_KEY: production-secret-key-change-me-in-real-deployment
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - groups_network
+    restart: unless-stopped
+    profiles:
+      - app
+
   postgres:
     image: postgres:16-alpine
     container_name: groups_postgres

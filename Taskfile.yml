@@ -103,3 +103,128 @@ tasks:
       echo "Starting clean development environment..."
       sleep 5
       cargo run
+
+  # Docker tasks
+  docker-build:
+    desc: Build Docker image for the application
+    cmd: docker build -t groups:latest .
+
+  docker-up:
+    desc: Start full application stack (database + app) with Docker
+    cmd: docker compose --profile app up -d
+
+  docker-down:
+    desc: Stop full application stack
+    cmd: docker compose --profile app down
+
+  docker-logs:
+    desc: Show application logs
+    cmd: docker compose --profile app logs -f app
+
+  docker-logs-db:
+    desc: Show database logs
+    cmd: docker compose logs -f postgres
+
+  docker-restart:
+    desc: Restart the application container
+    cmd: |
+      docker compose --profile app restart app
+      echo "Application restarted"
+
+  docker-shell:
+    desc: Open shell in application container
+    cmd: docker exec -it groups_app /bin/bash
+
+  docker-rebuild:
+    desc: Rebuild and restart the application
+    deps:
+      - task: docker-build
+    cmd: |
+      docker compose --profile app up -d --force-recreate app
+      echo "Application rebuilt and restarted"
+
+  docker-clean:
+    desc: Clean up Docker containers, images, and volumes
+    cmd: |
+      docker compose --profile app down
+      docker compose down
+      docker system prune -f
+      docker volume prune -f
+      echo "Docker cleanup complete"
+
+  # Production deployment tasks
+  deploy-build:
+    desc: Build optimized production image
+    cmd: |
+      echo "Building production Docker image..."
+      docker build -t groups:production --target runtime .
+      echo "Production image built successfully"
+
+  deploy-start:
+    desc: Start production deployment
+    deps:
+      - task: deploy-build
+    cmd: |
+      echo "Starting production deployment..."
+      docker compose --profile app -f docker-compose.yml --env-file .env.production up -d
+      echo "Production deployment started"
+
+  deploy-stop:
+    desc: Stop production deployment
+    cmd: |
+      docker compose --profile app down
+      echo "Production deployment stopped"
+
+  # Health and status tasks
+  status:
+    desc: Show status of all services
+    cmd: |
+      echo "=== Docker Services ==="
+      docker compose ps
+      echo ""
+      echo "=== Database Health ==="
+      docker exec groups_postgres pg_isready -U groups_user -d groups_dev 2>/dev/null && echo "✓ Database: Healthy" || echo "✗ Database: Not available"
+      echo ""
+      if docker ps --format "table {{.Names}}" | grep -q "groups_app"; then
+        echo "=== Application Health ==="
+        curl -s -o /dev/null -w "✓ Application: HTTP %{http_code}\n" http://localhost:8080/ || echo "✗ Application: Not responding"
+      else
+        echo "✗ Application: Container not running"
+      fi
+
+  logs-all:
+    desc: Show logs from all services
+    cmd: docker compose logs -f
+
+  # Testing with Docker
+  test-docker:
+    desc: Run tests in Docker environment
+    cmd: |
+      echo "Starting test database..."
+      docker compose --profile test up -d postgres_test
+      echo "Waiting for test database to be ready..."
+      sleep 5
+      echo "Running tests..."
+      DATABASE_TEST_URL=postgresql://groups_user:groups_password@localhost:5433/groups_test cargo test
+      echo "Stopping test database..."
+      docker compose --profile test down
+
+  # Development convenience tasks
+  quick-start:
+    desc: Quick start for new developers (database + local app)
+    deps:
+      - task: db-up
+    cmd: |
+      echo "Waiting for database to be ready..."
+      sleep 3
+      echo "Database is ready! Run 'cargo run' to start the application"
+      echo "Or run 'task dev' to start automatically"
+
+  clean-all:
+    desc: Clean everything (cargo + docker)
+    cmd: |
+      echo "Cleaning Cargo build artifacts..."
+      cargo clean
+      echo "Cleaning Docker resources..."
+      task docker-clean
+      echo "All cleaned up!"
