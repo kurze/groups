@@ -1,4 +1,4 @@
-name: Rust
+name: CI/CD Pipeline
 
 on:
   push:
@@ -8,26 +8,119 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: read
-  packages: read
+  packages: write
 
 jobs:
-  test:
-    name: Test
-    strategy:
-      matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        # rust: [stable, beta, nightly]
-        os: [ubuntu-latest]
-        rust: [stable]
-    runs-on: ${{ matrix.os }}
+  # Build Docker image only if it doesn't exist or if source changed
+  build-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-exists: ${{ steps.check-image.outputs.exists }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
         with:
-          toolchain: ${{ matrix.rust }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Check if image exists
+        id: check-image
+        run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Docker image already exists: $IMAGE_TAG"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "🔨 Docker image needs to be built: $IMAGE_TAG"
+          fi
+
+      - name: Build and push Docker image
+        id: build
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: true
+          sbom: true
+
+  test:
+    name: Test with Docker
+    runs-on: ubuntu-latest
+    needs: build-image
+    services:
+      postgres:
+        image: postgres:18beta1-alpine
+        env:
+          POSTGRES_DB: groups_test
+          POSTGRES_USER: groups_user
+          POSTGRES_PASSWORD: groups_password
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U groups_user -d groups_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker pull "$IMAGE_TAG"
+          echo "DOCKER_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # Native Rust testing for faster feedback on code quality
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
           components: rustfmt, clippy
 
       - name: Cache cargo registry
@@ -38,98 +131,89 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.rust }}-cargo-registry-
+            ${{ runner.os }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.rust }}-cargo-build-
-
-      - name: Cache cargo tools
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/cargo-tarpaulin
-            ~/.cargo/bin/cargo-audit
-          key: ${{ runner.os }}-cargo-tools-${{ hashFiles('.github/workflows/rust.yml') }}
+            ${{ runner.os }}-cargo-build-
 
       - name: Install tools
-        if: matrix.os == 'ubuntu-latest'
         run: |
           which cargo-tarpaulin || cargo install cargo-tarpaulin --locked
           which cargo-audit || cargo install cargo-audit --locked
 
-      # Check formatting
+      # Fast code quality checks
       - name: Check formatting
         run: cargo fmt -- --check
 
-      # Build
-      - name: Build
-        run: cargo build
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features
 
-      # Setup PostgreSQL for tests
-      - name: Setup PostgreSQL
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: '18beta1'
-          postgresql db: 'groups_test'
-          postgresql user: 'groups_user'
-          postgresql password: 'groups_password'
+      - name: Run security audit
+        run: cargo audit
 
-      # Run tests
+      # Run tests with native toolchain for coverage
       - name: Run tests
         env:
           DATABASE_TEST_URL: postgresql://groups_user:groups_password@localhost:5432/groups_test
         run: cargo test
 
-      # Run doc tests
       - name: Run doc tests
         run: cargo test --doc
 
-      # Clippy
-      - name: Clippy
-        run: cargo clippy --all-targets --all-features
-
       - name: Generate coverage report
-        if: matrix.os == 'ubuntu-latest'
         run: cargo tarpaulin --out Xml
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Run security audit
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo audit
+      # Integration tests with Docker image
+      - name: Test Docker image functionality
+        run: |
+          # Run the application container linked to postgres service
+          docker run -d --name groups-app \
+            --network host \
+            -e DATABASE_URL="postgresql://groups_user:groups_password@localhost:5432/groups_test" \
+            -e RUST_LOG=info \
+            -e HOST=127.0.0.1 \
+            -e PORT=8081 \
+            -e SESSION_SECRET_KEY="test-secret-key-for-ci-testing-only-64-characters-minimum-length" \
+            "$DOCKER_IMAGE"
+          
+          # Wait for app to be ready
+          timeout 30s bash -c 'until curl -f http://localhost:8081/ >/dev/null 2>&1; do sleep 1; done'
+          
+          # Basic health check
+          curl -f http://localhost:8081/ || exit 1
+          
+          echo "✅ Docker image integration test passed"
 
-      # Setup Node.js for Playwright tests
+      # E2E tests with Playwright
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      # Install npm dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Install Playwright browsers
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      # Run Playwright tests
-      - name: Run Playwright tests
+      - name: Run Playwright tests against Docker container
+        env:
+          BASE_URL: http://localhost:8081
         run: npm test
 
-      # Upload test results
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -138,15 +222,18 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Integration test with Docker image (only on main branch)
-  integration-test:
-    name: Integration Test with Docker
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker stop groups-app || true
+          docker rm groups-app || true
+
+  # Security scanning job
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: test
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+    needs: build-image
+    if: github.event_name == 'pull_request'
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -158,51 +245,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Start PostgreSQL for integration tests
+      - name: Run Trivy vulnerability scanner
         run: |
-          docker run -d --name postgres-integration \
-            -e POSTGRES_DB=groups_test \
-            -e POSTGRES_USER=groups_user \
-            -e POSTGRES_PASSWORD=groups_password \
-            -p 5432:5432 \
-            postgres:18beta1-alpine
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          timeout 30s bash -c 'until docker exec postgres-integration pg_isready -U groups_user -d groups_test; do sleep 1; done'
-
-      - name: Test application with Docker image
-        run: |
-          # Pull the latest image built by the Docker workflow
           IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           
-          # Check if the image exists (it should from the Docker build workflow)
-          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
-            echo "✅ Using cached Docker image: $IMAGE_TAG"
-            
-            # Run the application container
-            docker run -d --name groups-app \
-              --link postgres-integration:postgres \
-              -e DATABASE_URL="postgresql://groups_user:groups_password@postgres:5432/groups_test" \
-              -e RUST_LOG=info \
-              -e HOST=0.0.0.0 \
-              -e PORT=8080 \
-              -p 8080:8080 \
-              "$IMAGE_TAG"
-            
-            # Wait for app to be ready
-            timeout 30s bash -c 'until curl -f http://localhost:8080/ >/dev/null 2>&1; do sleep 1; done'
-            
-            # Basic health check
-            curl -f http://localhost:8080/ || exit 1
-            
-            echo "✅ Integration test passed with Docker image"
-          else
-            echo "⚠️ Docker image not found, skipping integration test"
-          fi
+          # Pull image if needed
+          docker pull "$IMAGE_TAG"
+          
+          # Run security scan
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $HOME/Library/Caches:/root/.cache/ \
+            aquasec/trivy image --format sarif --output trivy-results.sarif \
+            --severity HIGH,CRITICAL --exit-code 1 "$IMAGE_TAG" || {
+              echo "⚠️ High/Critical vulnerabilities found in image"
+              echo "Scan results will be uploaded to GitHub Security"
+            }
 
-      - name: Cleanup
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
-        run: |
-          docker stop groups-app postgres-integration || true
-          docker rm groups-app postgres-integration || true
+        with:
+          sarif_file: trivy-results.sarif
+
+  # Cleanup old Docker images
+  cleanup:
+    name: Cleanup Old Images
+    runs-on: ubuntu-latest
+    needs: [build-image, test]
+    if: github.ref == 'refs/heads/main' && always()
+    steps:
+      - name: Delete old container images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: false
+          token: ${{ secrets.GITHUB_TOKEN }}
