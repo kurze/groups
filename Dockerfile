@@ -3,9 +3,9 @@ FROM rust:1.85-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+  pkg-config \
+  libssl-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create app user
 RUN useradd -m -u 1001 appuser
@@ -21,9 +21,8 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 
 # Build dependencies (this will be cached)
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    cargo build --release && rm -rf src target/release/deps/groups*
+  --mount=type=cache,target=/usr/local/cargo/git \
+  cargo build --release && rm -rf src target/release/deps/groups*
 
 # Copy source code
 COPY src/ ./src/
@@ -31,19 +30,18 @@ COPY migrations/ ./migrations/
 
 # Build application
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    cargo build --release
+  --mount=type=cache,target=/usr/local/cargo/git \
+  cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    libssl3 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+  ca-certificates \
+  libssl3 \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create app user
 RUN useradd -m -u 1001 appuser
@@ -72,7 +70,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/ || exit 1
+  CMD curl -f http://localhost:8080/ || exit 1
 
 # Set environment variables
 ENV RUST_LOG=info
