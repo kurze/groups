@@ -20,14 +20,20 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 
 # Build dependencies (this will be cached)
-RUN cargo build --release && rm -rf src target/release/deps/groups*
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo build --release && rm -rf src target/release/deps/groups*
 
 # Copy source code
 COPY src/ ./src/
 COPY migrations/ ./migrations/
 
 # Build application
-RUN cargo build --release
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim AS runtime
