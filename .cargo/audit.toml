@@ -9,7 +9,7 @@
 # Automatically fetch the latest advisory database
 fetch = true
 # Use the latest available advisories
-url = ["https://github.com/RustSec/advisory-db.git"]
+url = "https://github.com/RustSec/advisory-db.git"
 
 [packages]
 # Package-specific audit configuration
