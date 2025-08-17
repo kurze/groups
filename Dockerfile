@@ -1,5 +1,5 @@
 # Multi-stage build for Rust application
-FROM rust:1.85-bookworm AS builder
+FROM rust:1.89-trixie AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
   cargo build --release
 
 # Runtime stage
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
