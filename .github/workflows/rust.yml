@@ -127,7 +127,7 @@ jobs:
 
       # Run Playwright tests
       - name: Run Playwright tests
-        run: npm test
+        run: CI=true npm test
 
       # Upload test results
       - name: Upload Playwright Report
