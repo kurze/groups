@@ -24,7 +24,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'cargo run',
+    // run in release mode for CI to avoid rebuild in debug
+    command: process.env.CI ? 'cargo run --release' : 'cargo run',
     port: 8080,
     reuseExistingServer: !process.env.CI,
     timeout: 60 * 1000,
