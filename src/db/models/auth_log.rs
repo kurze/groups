@@ -41,9 +41,11 @@ pub mod event_types {
     pub const LOGIN_FAILURE: &str = "login_failure";
     pub const LOGIN_RATE_LIMITED: &str = "login_rate_limited";
     pub const PASSWORD_RESET_REQUESTED: &str = "password_reset_requested";
+    pub const PASSWORD_RESET_COMPLETED: &str = "password_reset_completed";
     pub const PASSWORD_RESET_SUCCESS: &str = "password_reset_success";
     pub const PASSWORD_RESET_FAILURE: &str = "password_reset_failure";
     pub const PASSWORD_CHANGED: &str = "password_changed";
+    pub const PASSWORD_CHANGE_FAILED: &str = "password_change_failed";
     pub const SESSION_EXPIRED: &str = "session_expired";
     pub const REGISTRATION_SUCCESS: &str = "registration_success";
     pub const REGISTRATION_FAILURE: &str = "registration_failure";

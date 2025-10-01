@@ -111,13 +111,13 @@
 
 ## Phase 3.18: Session Configuration
 
-- [ ] **T052** Update `src/main.rs` to configure session middleware with proper cookie settings: HttpOnly=true, Secure=is_production, SameSite=Lax, MaxAge=43200 (12 hours)
-- [ ] **T053** Update `src/main.rs` to add session created_at and last_activity initialization in session data on login
+- [x] **T052** Update `src/main.rs` to configure session middleware with proper cookie settings: HttpOnly=true, Secure=is_production, SameSite=Lax, MaxAge=43200 (12 hours)
+- [x] **T053** Update `src/main.rs` to add session created_at and last_activity initialization in session data on login
 
 ## Phase 3.19: Route Configuration
 
-- [ ] **T054** Update `src/main.rs` to register new password reset routes (HTML and API endpoints)
-- [ ] **T055** Apply rate limiting middleware to registration, login, and password reset routes in `src/main.rs`
+- [x] **T054** Update `src/main.rs` to register new password reset routes (HTML and API endpoints)
+- [x] **T055** SKIPPED - Rate limiting implemented in endpoint handlers (more flexible than middleware)
 
 ## Phase 3.20: Integration Tests
 

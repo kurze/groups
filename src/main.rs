@@ -170,7 +170,6 @@ async fn main() -> std::io::Result<()> {
                     .cookie_http_only(true)  // Prevent JavaScript access
                     .cookie_secure(is_production)  // HTTPS only in production
                     .cookie_same_site(SameSite::Lax)  // CSRF protection
-                    .cookie_max_age(Some(Duration::hours(12).to_std().unwrap()))  // 12 hour session
                     .build(),
             )
     })

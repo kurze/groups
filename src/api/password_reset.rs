@@ -1,15 +1,15 @@
 use crate::db::auth_log::AuthLogService;
-use crate::db::models::auth_log::event_types;
+use crate::db::models::event_types;
+use crate::db::models::rate_limit::{action_types, thresholds};
 use crate::db::password_reset::PasswordResetService;
-use crate::db::rate_limit::{RateLimitService, action_types, thresholds};
-use crate::db::user::{UserService, UserError};
+use crate::db::rate_limit::RateLimitService;
+use crate::db::user::UserService;
 use crate::email::EmailService;
 use crate::password::{validate_password_strength, is_password_strong_enough, format_password_feedback, hash_password};
 use crate::security::constant_time_eq;
 use actix_web::{web, HttpResponse, Result, HttpRequest};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use tera::Tera;
 
 #[derive(Debug, Deserialize)]
 pub struct PasswordResetRequestPayload {

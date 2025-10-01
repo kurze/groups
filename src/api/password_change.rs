@@ -1,5 +1,5 @@
 use crate::db::auth_log::AuthLogService;
-use crate::db::models::auth_log::event_types;
+use crate::db::models::event_types;
 use crate::db::password_reset::PasswordResetService;
 use crate::db::user::UserService;
 use crate::email::EmailService;

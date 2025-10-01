@@ -37,7 +37,7 @@ impl<S, B> Transform<S, ServiceRequest> for RateLimit
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
+    B: actix_web::body::MessageBody + 'static,
 {
     type Response = ServiceResponse<BoxBody>;
     type Error = Error;
@@ -64,7 +64,7 @@ impl<S, B> Service<ServiceRequest> for RateLimitMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
+    B: actix_web::body::MessageBody + 'static,
 {
     type Response = ServiceResponse<BoxBody>;
     type Error = Error;

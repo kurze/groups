@@ -1,8 +1,8 @@
-mod auth_log;
-mod group;
-mod password_reset_token;
-mod rate_limit;
-mod user;
+pub mod auth_log;
+pub mod group;
+pub mod password_reset_token;
+pub mod rate_limit;
+pub mod user;
 
 pub use auth_log::{event_types, AuthLog};
 pub use group::Group;

@@ -1,7 +1,8 @@
 use super::{hash_password, verify_password};
 use crate::db::auth_log::AuthLogService;
-use crate::db::models::auth_log::event_types;
-use crate::db::rate_limit::{RateLimitService, action_types, thresholds};
+use crate::db::models::event_types;
+use crate::db::models::rate_limit::{action_types, thresholds};
+use crate::db::rate_limit::RateLimitService;
 use crate::db::user::UserService;
 use crate::password::{validate_password_strength, is_password_strong_enough, format_password_feedback};
 use actix_session::Session;

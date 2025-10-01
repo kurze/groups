@@ -8,13 +8,31 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum EmailError {
     #[error("Failed to build email message: {0}")]
-    MessageBuild(#[from] lettre::error::Error),
+    MessageBuild(String),
 
     #[error("Failed to send email: {0}")]
-    SendFailed(#[from] lettre::transport::smtp::Error),
+    SendFailed(String),
 
     #[error("Missing environment variable: {0}")]
     MissingConfig(String),
+}
+
+impl From<lettre::error::Error> for EmailError {
+    fn from(err: lettre::error::Error) -> Self {
+        EmailError::MessageBuild(err.to_string())
+    }
+}
+
+impl From<lettre::transport::smtp::Error> for EmailError {
+    fn from(err: lettre::transport::smtp::Error) -> Self {
+        EmailError::SendFailed(err.to_string())
+    }
+}
+
+impl From<lettre::address::AddressError> for EmailError {
+    fn from(err: lettre::address::AddressError) -> Self {
+        EmailError::MessageBuild(err.to_string())
+    }
 }
 
 /// Email service for sending notifications

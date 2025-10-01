@@ -102,7 +102,7 @@ impl RateLimitService {
                         attempts_remaining: threshold - 1,
                         retry_after_seconds: None,
                     })
-                } else if record.is_rate_limited(threshold) {
+                } else if record.attempt_count >= threshold {
                     // Within window and over threshold
                     let retry_after = (record.window_start + Duration::minutes(5) - Utc::now())
                         .num_seconds()
@@ -201,12 +201,12 @@ impl RateLimitService {
                     };
 
                     let backoff_delay = if new_count > threshold {
-                        Some(record.calculate_backoff_delay(new_count - threshold))
+                        Some(RateLimitRecord::calculate_backoff_delay(new_count, threshold))
                     } else {
                         None
                     };
 
-                    let next_allowed = backoff_delay.map(|delay| Utc::now() + delay);
+                    let next_allowed = backoff_delay.map(|delay| Utc::now() + Duration::seconds(delay));
 
                     sqlx::query(
                         r#"

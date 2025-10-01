@@ -1,4 +1,3 @@
-use rand::Rng;
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 
@@ -42,8 +41,10 @@ pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 /// Uses `rand::thread_rng()` which provides cryptographically secure randomness.
 /// 32 bytes = 256 bits of entropy, sufficient for security tokens.
 pub fn generate_secure_token() -> String {
+    use rand::RngCore;
     let mut rng = rand::thread_rng();
-    let token_bytes: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
+    let mut token_bytes = vec![0u8; 32];
+    rng.fill_bytes(&mut token_bytes);
 
     // Use base64 URL-safe encoding (no padding) for tokens in URLs
     base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, &token_bytes)

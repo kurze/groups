@@ -15,7 +15,13 @@ pub enum PasswordError {
     ValidationFailed(String),
 
     #[error("Argon2 error: {0}")]
-    Argon2Error(#[from] argon2::password_hash::Error),
+    Argon2Error(String),
+}
+
+impl From<argon2::password_hash::Error> for PasswordError {
+    fn from(err: argon2::password_hash::Error) -> Self {
+        PasswordError::Argon2Error(format!("{:?}", err))
+    }
 }
 
 /// Password strength feedback from zxcvbn
