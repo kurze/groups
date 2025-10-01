@@ -141,13 +141,13 @@
 
 ## Phase 3.23: Documentation
 
-- [ ] **T067** Update `CLAUDE.md` with new API endpoints, password security features, rate limiting configuration, email setup instructions
+- [x] **T067** Update `CLAUDE.md` with new API endpoints, password security features, rate limiting configuration, email setup instructions
 - [ ] **T068** Add `task email-test` command to Taskfile.yml for starting Mailhog container and testing email sending locally
 
 ## Phase 3.24: Database Cleanup & Monitoring
 
-- [ ] **T069** Create `src/tasks/cleanup.rs` module with periodic cleanup tasks: expired reset tokens (>24h), old auth logs (>90 days), stale rate limit records (>24h)
-- [ ] **T070** Add cleanup task scheduler in `src/main.rs` using tokio::spawn with 1-hour interval
+- [x] **T069** Create `src/tasks/cleanup.rs` module with periodic cleanup tasks: expired reset tokens (>24h), old auth logs (>90 days), stale rate limit records (>24h)
+- [x] **T070** Add cleanup task scheduler in `src/main.rs` using tokio::spawn with 1-hour interval
 
 ## Phase 3.25: Performance Validation
 
