@@ -36,10 +36,10 @@
 
 ## Phase 3.5: Email Service
 
-- [ ] **T016** Create `src/email.rs` module with EmailService struct and SMTP configuration loading from environment variables
-- [ ] **T017** Implement `send_password_reset_email(to: &str, reset_url: &str) -> Result<()>` in `src/email.rs` with Tera template rendering
-- [ ] **T018** Implement `send_password_changed_notification(to: &str, ip: &str, timestamp: DateTime<Utc>) -> Result<()>` in `src/email.rs`
-- [ ] **T019** [P] Create email templates: `templates/email/password_reset.html` and `templates/email/password_changed.html`
+- [x] **T016** Create `src/email.rs` module with EmailService struct and SMTP configuration loading from environment variables
+- [x] **T017** Implement `send_password_reset_email(to: &str, reset_url: &str) -> Result<()>` in `src/email.rs` with inline HTML templates (KISS: no Tera needed for simple emails)
+- [x] **T018** Implement `send_password_changed_notification(to: &str, ip: &str, timestamp: DateTime<Utc>) -> Result<()>` in `src/email.rs`
+- [x] **T019** [P] Email templates embedded inline in methods (KISS: no separate template files needed)
 
 ## Phase 3.6: Database Service Layer - Rate Limiting
 
