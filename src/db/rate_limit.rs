@@ -123,6 +123,110 @@ impl RateLimitService {
             }
         }
     }
+
+    /// Record a rate limit attempt
+    ///
+    /// Increments the attempt counter for the given identifier and action.
+    /// Applies exponential backoff if threshold is exceeded.
+    ///
+    /// # Arguments
+    /// * `identifier` - IP address or email to rate limit
+    /// * `action_type` - Type of action (login, password_reset, registration)
+    /// * `pool` - Database connection pool
+    ///
+    /// # Returns
+    /// * `Ok(())` - Attempt recorded successfully
+    /// * `Err(RateLimitError)` - Database error
+    ///
+    /// # Exponential Backoff
+    /// - First violation: 1 minute
+    /// - Second violation: 5 minutes
+    /// - Third+ violations: 15 minutes
+    pub async fn record_attempt(
+        identifier: &str,
+        action_type: &str,
+        pool: &PgPool,
+    ) -> Result<(), RateLimitError> {
+        // Try to get existing record
+        let existing: Option<RateLimitRecord> = sqlx::query_as(
+            r#"
+            SELECT id, identifier, action_type, attempt_count, window_start, next_allowed_at, created_at, updated_at
+            FROM rate_limit_records
+            WHERE identifier = $1 AND action_type = $2
+            "#,
+        )
+        .bind(identifier)
+        .bind(action_type)
+        .fetch_optional(pool)
+        .await?;
+
+        match existing {
+            None => {
+                // Create new record with first attempt
+                sqlx::query(
+                    r#"
+                    INSERT INTO rate_limit_records (identifier, action_type, attempt_count, window_start, next_allowed_at)
+                    VALUES ($1, $2, 1, NOW(), NULL)
+                    "#,
+                )
+                .bind(identifier)
+                .bind(action_type)
+                .execute(pool)
+                .await?;
+            }
+            Some(record) => {
+                if record.is_window_expired() {
+                    // Window expired, reset counter
+                    sqlx::query(
+                        r#"
+                        UPDATE rate_limit_records
+                        SET attempt_count = 1, window_start = NOW(), next_allowed_at = NULL, updated_at = NOW()
+                        WHERE identifier = $1 AND action_type = $2
+                        "#,
+                    )
+                    .bind(identifier)
+                    .bind(action_type)
+                    .execute(pool)
+                    .await?;
+                } else {
+                    // Increment counter
+                    let new_count = record.attempt_count + 1;
+
+                    // Calculate exponential backoff
+                    let threshold = match action_type {
+                        action_types::LOGIN => thresholds::LOGIN,
+                        action_types::PASSWORD_RESET => thresholds::PASSWORD_RESET,
+                        action_types::REGISTRATION => thresholds::REGISTRATION,
+                        _ => 5, // Default threshold
+                    };
+
+                    let backoff_delay = if new_count > threshold {
+                        Some(record.calculate_backoff_delay(new_count - threshold))
+                    } else {
+                        None
+                    };
+
+                    let next_allowed = backoff_delay.map(|delay| Utc::now() + delay);
+
+                    sqlx::query(
+                        r#"
+                        UPDATE rate_limit_records
+                        SET attempt_count = $3, next_allowed_at = $4, updated_at = NOW()
+                        WHERE identifier = $1 AND action_type = $2
+                        "#,
+                    )
+                    .bind(identifier)
+                    .bind(action_type)
+                    .bind(new_count)
+                    .bind(next_allowed)
+                    .execute(pool)
+                    .await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
