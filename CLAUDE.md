@@ -88,23 +88,66 @@ task status              # Show status of all services
 Required environment variables (see `.env.example`):
 - `DATABASE_URL` - PostgreSQL connection string (dev: port 5432)
 - `DATABASE_TEST_URL` - Test database connection (port 5433)
-- `SESSION_SECRET_KEY` - Session encryption key (64+ chars)
+- `SESSION_SECRET_KEY` - Session encryption key (64+ chars, required for production)
 - `RUST_LOG` - Logging level (info, debug, etc.)
 - `HOST` / `PORT` - Server bind address (default: 127.0.0.1:8080)
+- `ENVIRONMENT` - Set to "production" for production mode (affects cookie security)
+
+**SMTP Configuration** (required for password reset emails):
+- `SMTP_HOST` - SMTP server hostname (e.g., "localhost" for Mailhog)
+- `SMTP_PORT` - SMTP server port (e.g., 1025 for Mailhog)
+- `SMTP_USERNAME` - SMTP authentication username (optional for local dev)
+- `SMTP_PASSWORD` - SMTP authentication password (optional for local dev)
+- `SMTP_FROM_EMAIL` - Sender email address (e.g., "noreply@groups.local")
+- `SMTP_FROM_NAME` - Sender display name (e.g., "Groups Platform")
+
+**Local Email Testing with Mailhog**:
+```bash
+# Start Mailhog for local email capture
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+# Access web UI at http://localhost:8025
+```
 
 ## API Endpoints
 
 ### HTML Pages
 - `GET /` - Home page
 - `GET /login` - Login page
-- `GET /register` - Registration page
+- `GET /register` - Registration page (with password strength validation)
 - `GET /groups` - Groups listing page
 - `GET /groups/new` - Create group page (protected)
 
 ### Authentication API
-- `POST /auth/login` - Login (form data: email, password)
-- `POST /auth/register` - Register (form data: email, password)
+- `POST /auth/login` - Login with rate limiting and account lockout
+  - Form data: email, password
+  - Rate limit: 5 attempts per 5 minutes per IP
+  - Account lockout: 5 failed attempts = 15 minute lock
+  - Logs all attempts (success and failure)
+- `POST /auth/register` - Register with password strength validation
+  - Form data: email, password
+  - Rate limit: 5 attempts per 5 minutes per IP
+  - Validates password strength (zxcvbn score ≥ 3)
+  - Returns detailed feedback for weak passwords
 - `GET /logout` - Logout and clear session
+
+### Password Security API
+- `POST /api/auth/password-reset/request` - Request password reset
+  - JSON: `{"email": "user@example.com"}`
+  - Rate limit: 3 attempts per 5 minutes per IP
+  - Sends email with reset link (15 minute expiry)
+  - Constant-time response (prevents user enumeration)
+- `POST /api/auth/password-reset/confirm` - Confirm password reset
+  - JSON: `{"token": "...", "new_password": "..."}`
+  - Validates token (expiry, single-use)
+  - Validates password strength
+  - Invalidates all user's reset tokens
+  - Sends confirmation email
+- `POST /api/auth/password/change` - Change password (authenticated)
+  - JSON: `{"current_password": "...", "new_password": "..."}`
+  - Requires valid session
+  - Validates current password
+  - Validates new password strength
+  - Sends notification email
 
 ### Groups REST API
 - `GET /api/groups` - List active groups (JSON)
@@ -125,7 +168,64 @@ Required environment variables (see `.env.example`):
 - `serde` (~1) - JSON serialization
 - `chrono` (~0.4) - Date/time handling
 - `argon2` (0.5.3) - Password hashing with salt
+- `zxcvbn` (2) - Password strength validation
+- `subtle` (2.6) - Constant-time cryptographic operations
+- `lettre` (0.11) - SMTP email client
+- `sha2` (0.10) - SHA-256 token hashing
 - `uuid` (1) - UUID generation
+
+## Password Security Features
+
+### Password Strength Validation
+- **Algorithm**: zxcvbn (realistic password strength estimation)
+- **Minimum Score**: 3 out of 4 (safely unguessable)
+- **User Context**: Penalizes passwords containing user's email or name
+- **Max Length**: 128 characters
+- **Feedback**: Returns detailed suggestions for weak passwords
+
+### Password Hashing
+- **Algorithm**: Argon2id (OWASP 2024 recommended)
+- **Parameters**: Default (19 MiB memory, 2 iterations, 1 parallelism)
+- **Salt**: Random per-password using OsRng
+
+### Rate Limiting
+- **Backend**: PostgreSQL (no Redis required, KISS principle)
+- **Implementation**: Sliding window with exponential backoff
+- **Thresholds**:
+  - Login: 5 attempts per 5 minutes
+  - Password Reset: 3 attempts per 5 minutes
+  - Registration: 5 attempts per 5 minutes
+- **Backoff**: 1 min → 5 min → 15 min
+
+### Account Lockout
+- **Trigger**: 5 failed login attempts
+- **Duration**: 15 minutes automatic lock
+- **Auto-recovery**: Lock expires automatically
+- **Reset**: Successful login resets counter
+
+### Password Reset Flow
+- **Token Generation**: 32-byte cryptographically secure random tokens
+- **Token Storage**: SHA-256 hashed (never plaintext in database)
+- **Token Expiry**: 15 minutes
+- **Single-use**: Token marked as used after consumption
+- **Email**: Sent via SMTP with reset link
+
+### Session Security
+- **Storage**: Cookie-based (actix-session)
+- **Settings**: HttpOnly, Secure (production), SameSite=Lax
+- **Idle Timeout**: 30 minutes of inactivity
+- **Absolute Timeout**: 12 hours from creation
+- **Timestamps**: created_at and last_activity tracked
+
+### Security Logging
+- **Events Logged**: Login success/failure, password changes, reset requests, registrations
+- **Data Tracked**: User ID, IP address, user agent, timestamp, error details
+- **Purpose**: Audit trail for security incidents
+
+### Timing Attack Prevention
+- **Constant-time comparison**: Uses `subtle` crate for all sensitive comparisons
+- **User enumeration prevention**: Password reset returns same response for existing/non-existing users
+- **Response timing**: Carefully designed to avoid leaking user existence
 
 ## Testing
 
