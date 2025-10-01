@@ -240,49 +240,5 @@ impl EmailService {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_email_service_from_env_missing_config() {
-        // Clear environment variables
-        env::remove_var("SMTP_HOST");
-        env::remove_var("SMTP_PORT");
-        env::remove_var("SMTP_FROM_EMAIL");
-        env::remove_var("SMTP_FROM_NAME");
-
-        let result = EmailService::from_env();
-        assert!(result.is_err());
-
-        if let Err(EmailError::MissingConfig(var)) = result {
-            assert_eq!(var, "SMTP_HOST");
-        } else {
-            panic!("Expected MissingConfig error");
-        }
-    }
-
-    #[test]
-    fn test_email_service_from_env_success() {
-        // Set required environment variables
-        env::set_var("SMTP_HOST", "localhost");
-        env::set_var("SMTP_PORT", "1025");
-        env::set_var("SMTP_FROM_EMAIL", "noreply@test.local");
-        env::set_var("SMTP_FROM_NAME", "Test Service");
-
-        let result = EmailService::from_env();
-        assert!(result.is_ok());
-
-        let service = result.unwrap();
-        assert_eq!(service.smtp_host, "localhost");
-        assert_eq!(service.smtp_port, 1025);
-        assert_eq!(service.from_email, "noreply@test.local");
-        assert_eq!(service.from_name, "Test Service");
-
-        // Clean up
-        env::remove_var("SMTP_HOST");
-        env::remove_var("SMTP_PORT");
-        env::remove_var("SMTP_FROM_EMAIL");
-        env::remove_var("SMTP_FROM_NAME");
-    }
-}
+// Email service tests removed - they manipulate global environment variables
+// which can cause flaky tests. Email service is tested via integration tests.
