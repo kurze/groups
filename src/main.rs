@@ -1,14 +1,17 @@
 use actix_files as fs;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{App, HttpResponse, HttpServer, cookie::Key, middleware as actix_middleware, web};
+use actix_web::{App, HttpResponse, HttpServer, cookie::{Key, SameSite}, middleware as actix_middleware, web};
+use chrono::Duration;
 use db::group::GroupService;
 use db::user::UserService;
 use std::env;
 use tera::Tera;
 mod api;
 mod db;
+mod email;
 mod middleware;
 mod password;
+mod security;
 
 use api::hello::AppStateWithCounter;
 
@@ -59,6 +62,13 @@ async fn main() -> std::io::Result<()> {
     });
     let user_service = web::Data::new(UserService::new(pool.clone()));
     let group_service = web::Data::new(GroupService::new(pool.clone()));
+    let pool_data = web::Data::new(pool.clone());
+
+    // Initialize email service
+    let email_service = web::Data::new(
+        email::EmailService::from_env()
+            .expect("Failed to initialize email service (check SMTP_* environment variables)")
+    );
 
     // Get configuration from environment
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -101,11 +111,18 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Check if running in production
+    let is_production = env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "development".to_string())
+        .to_lowercase() == "production";
+
     HttpServer::new(move || {
         App::new()
             .app_data(counter.clone())
             .app_data(user_service.clone())
             .app_data(group_service.clone())
+            .app_data(pool_data.clone())
+            .app_data(email_service.clone())
             .app_data(tera_data.clone())
             // Static files
             .service(fs::Files::new("/static", "src/static").show_files_listing())
@@ -128,14 +145,32 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .configure(api::configure_groups_routes)
-                    .configure(api::configure_html_routes),
+                    .configure(api::configure_html_routes)
+                    // Password reset endpoints
+                    .route(
+                        "/auth/password-reset/request",
+                        web::post().to(api::password_reset::password_reset_request_api)
+                    )
+                    .route(
+                        "/auth/password-reset/confirm",
+                        web::post().to(api::password_reset::password_reset_confirm_api)
+                    )
+                    // Password change endpoint (protected)
+                    .service(
+                        web::resource("/auth/password/change")
+                            .wrap(crate::middleware::auth::RequireAuth)
+                            .route(web::post().to(api::password_change::password_change_api))
+                    ),
             )
             // Default 404 handler
             .default_service(web::route().to(not_found))
             .wrap(actix_middleware::Logger::default())
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
-                    .cookie_secure(false) // Set to true in production with HTTPS
+                    .cookie_http_only(true)  // Prevent JavaScript access
+                    .cookie_secure(is_production)  // HTTPS only in production
+                    .cookie_same_site(SameSite::Lax)  // CSRF protection
+                    .cookie_max_age(Some(Duration::hours(12).to_std().unwrap()))  // 12 hour session
                     .build(),
             )
     })
