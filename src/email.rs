@@ -100,6 +100,65 @@ impl EmailService {
         mailer.send(&email)?;
         Ok(())
     }
+
+    /// Send password reset email
+    ///
+    /// Sends an email with a password reset link to the user.
+    ///
+    /// # Arguments
+    /// * `to_email` - Recipient email address
+    /// * `reset_token` - Plaintext password reset token (will be URL-encoded)
+    /// * `user_name` - User's name for personalization
+    ///
+    /// # Security
+    /// The reset link expires in 15 minutes (enforced by database).
+    /// Token should be cryptographically random (use security::generate_secure_token).
+    pub fn send_password_reset_email(
+        &self,
+        to_email: &str,
+        reset_token: &str,
+        user_name: &str,
+    ) -> Result<(), EmailError> {
+        let reset_url = format!(
+            "http://localhost:8080/reset-password?token={}",
+            urlencoding::encode(reset_token)
+        );
+
+        let body = format!(
+            r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .button {{ display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }}
+        .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Password Reset Request</h2>
+        <p>Hello {},</p>
+        <p>We received a request to reset your password. Click the button below to create a new password:</p>
+        <a href="{}" class="button">Reset Password</a>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #007bff;">{}</p>
+        <p><strong>This link will expire in 15 minutes.</strong></p>
+        <p>If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+        <div class="footer">
+            <p>This is an automated message from Groups Platform. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
+"#,
+            user_name, reset_url, reset_url
+        );
+
+        self.send_email(to_email, "Reset Your Password", &body)
+    }
 }
 
 #[cfg(test)]
