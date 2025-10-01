@@ -1,3 +1,4 @@
+pub mod auth_log;
 pub mod connection;
 pub mod group;
 pub mod models;
