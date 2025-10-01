@@ -2,6 +2,7 @@ pub mod auth;
 pub mod groups_api;
 pub mod groups_html;
 pub mod hello;
+pub mod password_change;
 pub mod password_reset;
 
 // Re-export API modules for easier imports
