@@ -159,6 +159,67 @@ impl EmailService {
 
         self.send_email(to_email, "Reset Your Password", &body)
     }
+
+    /// Send password changed notification
+    ///
+    /// Sends a security notification when a user's password is changed.
+    /// This helps users detect unauthorized account access.
+    ///
+    /// # Arguments
+    /// * `to_email` - Recipient email address
+    /// * `user_name` - User's name for personalization
+    ///
+    /// # Security
+    /// Always send this notification on password changes to alert users
+    /// of potential unauthorized access.
+    pub fn send_password_changed_notification(
+        &self,
+        to_email: &str,
+        user_name: &str,
+    ) -> Result<(), EmailError> {
+        let body = format!(
+            r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .alert {{ background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 15px; margin: 20px 0; }}
+        .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0; }}
+        .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Password Changed Successfully</h2>
+        <p>Hello {},</p>
+        <div class="alert">
+            <p><strong>Your password has been changed.</strong></p>
+            <p>This is a confirmation that your account password was successfully updated.</p>
+        </div>
+        <div class="warning">
+            <p><strong>Didn't make this change?</strong></p>
+            <p>If you did not change your password, your account may have been compromised. Please:</p>
+            <ul>
+                <li>Reset your password immediately</li>
+                <li>Review recent account activity</li>
+                <li>Contact support if you need assistance</li>
+            </ul>
+        </div>
+        <div class="footer">
+            <p>This is an automated security notification from Groups Platform. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
+"#,
+            user_name
+        );
+
+        self.send_email(to_email, "Password Changed - Groups Platform", &body)
+    }
 }
 
 #[cfg(test)]
