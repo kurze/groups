@@ -227,6 +227,38 @@ impl RateLimitService {
 
         Ok(())
     }
+
+    /// Reset rate limit for identifier and action
+    ///
+    /// Clears the rate limit record, allowing immediate retry.
+    /// Used after successful authentication or admin intervention.
+    ///
+    /// # Arguments
+    /// * `identifier` - IP address or email to reset
+    /// * `action_type` - Type of action to reset
+    /// * `pool` - Database connection pool
+    ///
+    /// # Returns
+    /// * `Ok(())` - Rate limit reset successfully (or no record exists)
+    /// * `Err(RateLimitError)` - Database error
+    pub async fn reset_rate_limit(
+        identifier: &str,
+        action_type: &str,
+        pool: &PgPool,
+    ) -> Result<(), RateLimitError> {
+        sqlx::query(
+            r#"
+            DELETE FROM rate_limit_records
+            WHERE identifier = $1 AND action_type = $2
+            "#,
+        )
+        .bind(identifier)
+        .bind(action_type)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
