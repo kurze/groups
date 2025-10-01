@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: User Registration with Password Strength Validation
+  description: Extended registration endpoint with zxcvbn password strength validation
+  version: 1.0.0
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register new user account
+      description: |
+        Create new user account with email and password.
+        Password strength is validated using zxcvbn (realistic strength estimation).
+        Weak passwords (score < 3) are rejected with specific feedback.
+      operationId: registerUser
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                  example: "alice@example.com"
+                  description: User's email address (must be unique)
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  example: "Alice Smith"
+                  description: User's display name
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  example: "correct-horse-battery-staple-2024"
+                  description: |
+                    Password. Must achieve zxcvbn score >= 3.
+                    No arbitrary complexity rules—strength evaluated realistically.
+                    Passwords containing the user's email or name parts are penalized.
+            examples:
+              valid:
+                summary: Valid registration
+                value:
+                  email: "bob@example.com"
+                  name: "Bob Johnson"
+                  password: "my-secure-unique-passphrase-42"
+              weak_password:
+                summary: Weak password (returns 400)
+                value:
+                  email: "charlie@example.com"
+                  name: "Charlie Brown"
+                  password: "password123"
+              password_contains_email:
+                summary: Password contains email (returns 400)
+                value:
+                  email: "dave@example.com"
+                  name: "Dave"
+                  password: "dave@example.com-password"
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - email
+                  - name
+                  - created_at
+                properties:
+                  id:
+                    type: integer
+                    example: 42
+                  email:
+                    type: string
+                    format: email
+                    example: "alice@example.com"
+                  name:
+                    type: string
+                    example: "Alice Smith"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-10-01T12:00:00Z"
+        '400':
+          description: Invalid request (weak password, invalid email, missing fields)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: string
+                    example: "Password is too weak"
+                  field:
+                    type: string
+                    enum: [email, name, password]
+                    example: "password"
+                    description: Which field caused the error
+                  feedback:
+                    type: object
+                    description: Password strength feedback from zxcvbn (if password error)
+                    properties:
+                      score:
+                        type: integer
+                        minimum: 0
+                        maximum: 4
+                        example: 1
+                        description: Strength score (0=very weak, 4=very strong)
+                      warning:
+                        type: string
+                        example: "This is a very common password"
+                      suggestions:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "Use a longer passphrase"
+                          - "Avoid predictable patterns"
+                          - "Don't use parts of your email or name"
+        '409':
+          description: Conflict (email already registered)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: string
+                    example: "Email already registered. Try logging in?"
+        '429':
+          description: Too many registration attempts from this IP (rate limited)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - retry_after_seconds
+                properties:
+                  error:
+                    type: string
+                    example: "Too many registration attempts. Please try again later."
+                  retry_after_seconds:
+                    type: integer
+                    example: 1800
+                    description: Seconds until next attempt is allowed (30 minutes)
+      security: []  # Public endpoint, no authentication required
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - created_at
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PasswordFeedback:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: |
+            zxcvbn strength score:
+            0 = too guessable (risky password)
+            1 = very guessable (protection from throttled online attacks)
+            2 = somewhat guessable (protection from unthrottled online attacks)
+            3 = safely unguessable (moderate protection from offline attacks)
+            4 = very unguessable (strong protection from offline attacks)
+        warning:
+          type: string
+          nullable: true
+          description: Explanation of primary weakness (e.g., "This is similar to a commonly used password")
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Specific, actionable suggestions to improve password strength
