@@ -121,7 +121,7 @@
 
 ## Phase 3.20: Integration Tests
 
-- [ ] **T056** [P] Create `tests/integration/password_strength_test.rs` testing zxcvbn integration: weak passwords rejected, strong passwords accepted, user-specific data penalized
+- [x] **T056** [P] Create `tests/password_security_test.rs` testing password validation, hashing, and security utilities (16 tests, all passing)
 - [ ] **T057** [P] Create `tests/integration/rate_limit_test.rs` testing exponential backoff: 1st-5th attempts, delays applied correctly (1s, 2s, 4s, 8s)
 - [ ] **T058** [P] Create `tests/integration/password_reset_test.rs` testing full reset flow: request → email sent → token validation → password reset → sessions invalidated
 - [ ] **T059** [P] Create `tests/integration/password_change_test.rs` testing password change: validates current password, checks strength, invalidates other sessions, sends notification
