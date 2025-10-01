@@ -91,6 +91,17 @@ async fn main() -> std::io::Result<()> {
     }
     env_logger::init();
 
+    // Start background cleanup task
+    let cleanup_pool = pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600)); // 1 hour
+        loop {
+            interval.tick().await;
+            println!("Running periodic database cleanup...");
+            groups::tasks::CleanupTasks::run_all(&cleanup_pool).await;
+        }
+    });
+
     // Get session secret key from environment or generate one for development
     let secret_key = match env::var("SESSION_SECRET_KEY") {
         Ok(key) => {
